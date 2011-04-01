@@ -6,20 +6,11 @@ from StringIO import StringIO
 import cv
 import time
 
-def get_pil_green_image(w, h):
-    clr = chr(0)+chr(255)+chr(0)
-    im = Image.fromstring("RGB", (w,h), clr*(w*h))
-    return im
-
-def get_pil_image(path="sample/img_563.jpg"):
-    im = Image.open(path)
-    return im
-
-def pil2qimage(pil_image, qimage):
+def pil2qimage(pil_image, qt_image):
     file = StringIO()
     pil_image.save(file, "BMP")
-    qimage.loadFromData(file.getvalue(), "BMP")
-    return qimage
+    qt_image.loadFromData(file.getvalue(), "BMP")
+    return qt_image
 
 app = QApplication(sys.argv)
 
@@ -32,7 +23,7 @@ class WebCamDialog(QDialog):
 
         self.webCamThread = WebCamThread(self.lock)
 
-        button = QPushButton(text="Push me")
+        button = QPushButton(text="Show webcam picture")
         self.connect(button, SIGNAL("clicked()"), self.clicked)
         self.frame = QLabel()
         self.frame.setFrameStyle(QFrame.Box)
