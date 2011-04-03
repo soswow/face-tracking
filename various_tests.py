@@ -1,6 +1,7 @@
 __author__ = 'soswow'
 import cv
 from cvutils import *
+from skindetect import *
 
 def hsv_test():
     img = cv.LoadImage("sample/img_563.jpg")
@@ -40,46 +41,6 @@ def cam_hsv_test():
         if key == 27:
             break
 
-def get_hist_2d_img(img):
-    size = cv.GetSize(img)
-    hsv = cv.CreateImage(size, 8, 3)
-    cv.CvtColor(img, hsv, cv.CV_BGR2HSV)
-
-    # Extract the H and S planes
-
-    h_plane = image_empty_clone(hsv, channels=1)
-    s_plane = image_empty_clone(hsv, channels=1)
-    cv.Split(hsv, h_plane, s_plane, None, None)
-    planes = [h_plane, s_plane]
-
-    h_bins = 30
-    s_bins = 32
-    #    hist_size = [h_bins, s_bins]
-
-    # hue varies from 0 (~0 deg red) to 180 (~360 deg red again */
-    h_ranges = [0, 180]
-    # saturation varies from 0 (black-gray-white) to
-    # 255 (pure spectrum color)
-    s_ranges = [0, 255]
-    ranges = [h_ranges, s_ranges]
-
-    hist = cv.CreateHist([h_bins, s_bins], cv.CV_HIST_ARRAY, ranges, 1)
-    cv.CalcHist(planes, hist)
-    (_, max_value, _, _) = cv.GetMinMaxHistValue(hist)
-
-    scale = 10
-    hist_img = cv.CreateImage((h_bins*scale, s_bins*scale), 8, 3)
-
-    for h in range(h_bins):
-        for s in range(s_bins):
-            bin_val = cv.QueryHistValue_2D(hist, h, s)
-            intensity = cv.Round(bin_val * 255 / max_value)
-            cv.Rectangle(hist_img,
-                         (h*scale, s*scale),
-                         ((h+1)*scale - 1, (s+1)*scale - 1),
-                         cv.RGB(intensity, intensity, intensity),
-                         cv.CV_FILLED)
-    return hist_img
 
 def webcam_hist2d():
     cap = cv.CaptureFromCAM(0)
@@ -87,7 +48,7 @@ def webcam_hist2d():
     cv.NamedWindow("H-S Histogram", 1)
     while 1:
         img = cv.QueryFrame(cap)
-        hist_img = get_hist_2d_img(img)
+        hist_img = get_2d_hist_img(img=img)
 
         cv.ShowImage("Source", img)
         cv.ShowImage("H-S Histogram", hist_img)
@@ -101,7 +62,7 @@ def webcam_hist2d():
     cv.NamedWindow("H-S Histogram", 1)
     while 1:
         img = cv.QueryFrame(cap)
-        hist_img = get_hist_2d_img(img)
+        hist_img = get_2d_hist_img(img=img)
 
         cv.ShowImage("Source", img)
         cv.ShowImage("H-S Histogram", hist_img)
@@ -110,7 +71,7 @@ def webcam_hist2d():
             break
 
 def get_rgb_histogram_images(img, bins=255, width=510):
-    r,g,b = get_three_planes(img)
+    r,g,b = get_rgb_planes(img)
     r_hist_img = get_hist_image(get_gray_histogram(r, bins), bins, width)
     g_hist_img = get_hist_image(get_gray_histogram(g, bins), bins, width)
     b_hist_img = get_hist_image(get_gray_histogram(b, bins), bins, width)
@@ -135,47 +96,35 @@ def webcam_rgb_histograms():
         if cv.WaitKey(20) == 27:
             break
 
+def get_source_and_normal_planes(img,aggressive=0.01):
+    r,g,b = get_rgb_histogram_images(img,width=255)
+    norm_img = normalize(img,aggressive)
+    norm_r, norm_g, norm_b =get_rgb_histogram_images(norm_img,width=255)
+    return {"img":img,
+             "r":r,
+             "g":g,
+             "b":b,
+             "norm":norm_img,
+             "norm_r":norm_r,
+             "norm_g":norm_g,
+             "norm_b":norm_b}
 
 def histogram():
-    img = cv.LoadImage("sample/0003_00000002.jpg")
-    r,g,b = get_rgb_histogram_images(img,width=255)
-    norm_img = normalize(img)
-    norm_r, norm_g, norm_b =get_rgb_histogram_images(norm_img,width=255)
-    show_images({"img":img,
-                 "r":r,
-                 "g":g,
-                 "b":b,
-                 "norm":norm_img,
-                 "norm_r":norm_r,
-                 "norm_g":norm_g,
-                 "norm_b":norm_b})
+    img = cv.LoadImage("sample/lena.bmp")
+    show_images(get_source_and_normal_planes(img))
 
 def webcam_normalize():
     cap = cv.CaptureFromCAM(0)
-    cv.NamedWindow("Source", 1)
-    cv.NamedWindow("Normalized", 1)
     while 1:
         img = cv.QueryFrame(cap)
-#        img = scale_image(img, scale_factor=4)
-#        eq_img = equalize(img)
-        norm_img = normalize(img)
-
-        cv.ShowImage("Source", img)
-        cv.ShowImage("Normalized", norm_img)
+#        dst = image_empty_clone(img)
+#        cv.Smooth(img, dst, cv.CV_GAUSSIAN, 7, 7)
+        dic = get_source_and_normal_planes(img,aggressive=0.005)
+        for name, plane in dic.items():
+            cv.ShowImage(name, plane)
 
         if cv.WaitKey(20) == 27:
             break
-
-def equalize(img):
-    dst = image_empty_clone(img)
-    rgb = get_rgb_planes(img)
-    out_rgb = []
-    for plane in rgb:
-        equal_plane = image_empty_clone(plane)
-        cv.EqualizeHist(plane, equal_plane)
-        out_rgb.append(equal_plane)
-    cv.Merge(out_rgb[0],out_rgb[1],out_rgb[2],None,dst)
-    return dst
 
 def gui():
     cv.NamedWindow("Window")
@@ -186,8 +135,38 @@ def gui():
     cv.ShowImage("Window",img)
     cv.WaitKey(0)
 
+def test_rgb_planes():
+    img = cv.LoadImage("sample/image3114.png")
+    r,g,b = get_rgb_planes(img)
+    show_images({"img":img, "r":r,"g":g,"b":b})
+
+
+def test1():
+    for src in ["sample/0003_00000002.jpg", "sample/img_563.jpg","sample/lena.bmp"]:
+        img = cv.LoadImage(src)
+        eq_img = equalize(img)
+        norm_img = normalize(img,0.05)
+        img_skin = filter_skin(img)
+        eq_skin = filter_skin(eq_img)
+        norm_skin = filter_skin(norm_img)
+        
+        show_images({"img":img,"eq":eq_img,"norm":norm_img,
+                     "img_skin":img_skin,"eq_skin":eq_skin,"norm_skin":norm_skin})
+
+def test_normalize_plane():
+    img = cv.LoadImage("sample/lena.bmp")
+    _, g, _ = get_rgb_planes(img)
+    g_hist_img = get_hist_image(get_gray_histogram(g, bins=255), bins=255)
+
+    ng = normalize_plane(g)
+    ng_hist_img = get_hist_image(get_gray_histogram(ng, bins=255),bins=255)
+
+    show_images({"g":g, "g_hist_img":g_hist_img, "ng":ng,"ng_hist_img":ng_hist_img})
+
+
 if __name__ == "__main__":
-    pass
+    webcam_normalize()
+#    test_normalize_plane()
 #    gui()
 #    webcam_normalize()
 #    histogram()
