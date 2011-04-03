@@ -1,5 +1,7 @@
 import cv
 import numpy as np
+from datetime import datetime
+from functools import wraps
 
 def show_image(img, window_name="win"):
     cv.ShowImage(window_name, img)
@@ -243,3 +245,22 @@ def get_normalized_rgb_planes(r,g,b):
 #    cv.Merge(nr_plane,ng_plane,nb_plane,None,res)
     return nr_plane, ng_plane, nb_plane
 #    return res
+
+
+def time_took(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if "time_took" in kwargs and kwargs["time_took"]:
+            del kwargs["time_took"]
+            start = datetime.now()
+            res = fn(*args, **kwargs)
+            delta = datetime.now() - start
+            diff_t = delta.seconds + delta.microseconds * 0.000001
+            try:
+                res2 = []+list(res)+[diff_t]
+            except TypeError:
+                res2 = [res, diff_t]
+            return res2
+        else:
+            return fn(*args, **kwargs)
+    return wrapper

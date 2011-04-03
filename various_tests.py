@@ -96,7 +96,7 @@ def webcam_rgb_histograms():
         if cv.WaitKey(20) == 27:
             break
 
-def get_source_and_normal_planes(img,aggressive=0.01):
+def get_source_and_normal_planes(img,aggressive=0.001):
     r,g,b = get_rgb_histogram_images(img,width=255)
     norm_img = normalize(img,aggressive)
     norm_r, norm_g, norm_b =get_rgb_histogram_images(norm_img,width=255)
@@ -111,7 +111,7 @@ def get_source_and_normal_planes(img,aggressive=0.01):
 
 def histogram():
     img = cv.LoadImage("sample/lena.bmp")
-    show_images(get_source_and_normal_planes(img))
+    show_images(get_source_and_normal_planes(img,aggressive=0.05))
 
 def webcam_normalize():
     cap = cv.CaptureFromCAM(0)
@@ -145,11 +145,13 @@ def test1():
     for src in ["sample/0003_00000002.jpg", "sample/img_563.jpg","sample/lena.bmp"]:
         img = cv.LoadImage(src)
         eq_img = equalize(img)
-        norm_img = normalize(img,0.05)
-        img_skin = filter_skin(img)
-        eq_skin = filter_skin(eq_img)
-        norm_skin = filter_skin(norm_img)
-        
+        norm_img = normalize(img, 0.05)
+        img_skin, time1 = filter_skin(img, time_took=True)
+        eq_skin, time2 = filter_skin(eq_img, time_took=True)
+        norm_skin, time3 = filter_skin(norm_img, time_took=True)
+
+        print time1, time2, time3
+
         show_images({"img":img,"eq":eq_img,"norm":norm_img,
                      "img_skin":img_skin,"eq_skin":eq_skin,"norm_skin":norm_skin})
 
@@ -163,9 +165,8 @@ def test_normalize_plane():
 
     show_images({"g":g, "g_hist_img":g_hist_img, "ng":ng,"ng_hist_img":ng_hist_img})
 
-
 if __name__ == "__main__":
-    webcam_normalize()
+    test1()
 #    test_normalize_plane()
 #    gui()
 #    webcam_normalize()

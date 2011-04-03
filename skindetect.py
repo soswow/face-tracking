@@ -66,6 +66,7 @@ def norm_rg_filter(r,g,b):
     cv.And(nr_mask, ng_mask, res)
     return res
 
+@time_took
 def skin_mask(img):
     r,g,b = get_rgb_planes(img)
     hsv_mask = filter_by_hsv(img, {
@@ -87,26 +88,30 @@ def skin_mask(img):
 
     return th, hsv_mask, rg_mask, nr_ng_mask
 
+@time_took
 def filter_skin(img):
     mask, _, _, _ = skin_mask(img)
     res = image_empty_clone(img)
     cv.And(img, merge_rgb(mask,mask,mask), res)
     return res
 
+@time_took
+def _main(img):
+#    img = scale_image(img, 4)
+    img = normalize(img,aggressive=0.001)
+    skin = filter_skin(img)
+    return img, skin
+
 def main():
+    font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN, 1, 1)
     cap = cv.CaptureFromCAM(0)
     while 1:
-        img = scale_image(cv.QueryFrame(cap), 4)
-#        img = cv.QueryFrame(cap)
-        img = normalize(img,aggressive=0.001)
-#        mask, hsv_mask, rg_mask, nr_ng_mask = skin_mask(img)
-        skin = filter_skin(img)
+        img, cam_time = time_took(cv.QueryFrame)(cap, time_took=True)
+        img, skin, time = _main(img, time_took=True)
+        cv.PutText(img,"%.6f cam, %.6f face" % (cam_time, time), (0,15), font, cv.RGB(255,255,255))
         cv.ShowImage("cam", img)
         cv.ShowImage("skin", skin)
-#        cv.ShowImage("hsv_mask", hsv_mask)
-#        cv.ShowImage("rg_mask", rg_mask)
-#        cv.ShowImage("nr_ng_mask", nr_ng_mask)
-#        cv.ShowImage("mask", mask)
+
         key = cv.WaitKey(10)
         if key == 27:
             break
