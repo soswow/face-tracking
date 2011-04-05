@@ -267,3 +267,10 @@ def time_took(fn):
 
 def sizeOf(obj):
     return cv.GetSize(obj)
+
+default_font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN, 1, 1)
+def write_info(img, text, font=default_font):
+    cv.PutText(img, text, (0,15), font, cv.RGB(255,255,255))
+
+def memory():
+    return cv.CreateMemStorage()

@@ -99,12 +99,11 @@ def _main(img):
     return img, skin
 
 def main():
-    font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN, 1, 1)
     cap = cv.CaptureFromCAM(0)
     while 1:
         img, cam_time = time_took(cv.QueryFrame)(cap, time_took=True)
         img, skin, time = _main(img, time_took=True)
-        cv.PutText(img,"%.6f cam, %.6f face" % (cam_time, time), (0,15), font, cv.RGB(255,255,255))
+        write_info(img, "%.6f cam, %.6f face" % (cam_time, time))
         cv.ShowImage("cam", img)
         cv.ShowImage("skin", skin)
 
