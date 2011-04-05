@@ -17,25 +17,21 @@ def h2cv_values(*hh):
 def probability_to_255(*sv):
     return _hsv2cv_values(lambda sv:sv*255, 255, 0, *sv)
 
-def clear_hist_in_range(hist, start, stop):
-    for k in range(start, stop):
-        hist.bins[k] = 0
-
-def get_filtered_plane(plane, filter_ranges, bins, ranges_func):
-    hist = get_gray_histogram(plane, bins=bins)
-    for start, stop in filter_ranges:
-        start, stop =  ranges_func(start, stop) #0.3, 1.0
-        clear_hist_in_range(hist, start, stop)
+def get_filtered_plane(plane, filter_ranges, ranges_func):
     mask = image_empty_clone(plane)
-    cv.CalcBackProject((plane,), mask, hist)
+    for start, stop in filter_ranges:
+        start, stop = ranges_func(start, stop) #0.3, 1.0
+        tmp = image_empty_clone(plane)
+        cv.InRangeS(plane, start, stop, tmp)
+        cv.Or(mask, tmp, mask)
     return mask
 
 def filter_by_hsv(img, ranges):
     h,s,v = get_hsv_planes(img)
     
-    h_mask = get_filtered_plane(h, ranges["h"], 180, h2cv_values)
-    s_mask = get_filtered_plane(s, ranges["s"], 255, probability_to_255)
-    v_mask = get_filtered_plane(v, ranges["v"], 255, probability_to_255)
+    h_mask = get_filtered_plane(h, ranges["h"], h2cv_values)
+    s_mask = get_filtered_plane(s, ranges["s"], probability_to_255)
+    v_mask = get_filtered_plane(v, ranges["v"], probability_to_255)
 
     hsv_mask = image_empty_clone(v_mask)
     cv.And(v_mask, s_mask, hsv_mask, mask=h_mask)
@@ -59,8 +55,8 @@ def rg_filter(r, g):
 def norm_rg_filter(r,g,b):
     nr, ng, _ = get_normalized_rgb_planes(r,g,b)
 
-    nr_mask = get_filtered_plane(nr, ((0, 0.33), (0.6, 1)), 255, probability_to_255)
-    ng_mask = get_filtered_plane(ng, ((0, 0.25), (0.37, 1)), 255, probability_to_255)
+    nr_mask = get_filtered_plane(nr, ((0.33, 0.6),), probability_to_255)
+    ng_mask = get_filtered_plane(ng, ((0.25, 0.37),), probability_to_255)
 
     res = image_empty_clone(nr)
     cv.And(nr_mask, ng_mask, res)
@@ -70,9 +66,9 @@ def norm_rg_filter(r,g,b):
 def skin_mask(img):
     r,g,b = get_rgb_planes(img)
     hsv_mask = filter_by_hsv(img, {
-        "h": ((50, 340),),
-        "s": ((0, 0.12), (0.7, 1),),
-        "v": ((0, 0.3),)})
+        "h": ((0,50), (340, 360)),
+        "s": ((0.12, 0.7),),
+        "v": ((0.3, 1),)})
 
     rg_mask = rg_filter(r,g)
     nr_ng_mask = norm_rg_filter(r,g,b)
@@ -83,14 +79,14 @@ def skin_mask(img):
     cv.And(tmp,nr_ng_mask,total_mask)
 
     th = image_empty_clone(total_mask)
-    cv.Smooth(total_mask,total_mask,cv.CV_GAUSSIAN,11,11)
+    cv.Smooth(total_mask,total_mask,cv.CV_MEDIAN, 5, 5)
     cv.Threshold(total_mask, th, 25, 255, cv.CV_THRESH_BINARY)
 
-    return th, hsv_mask, rg_mask, nr_ng_mask
+    return th
 
 @time_took
 def filter_skin(img):
-    mask, _, _, _ = skin_mask(img)
+    mask = skin_mask(img)
     res = image_empty_clone(img)
     cv.And(img, merge_rgb(mask,mask,mask), res)
     return res
@@ -98,7 +94,7 @@ def filter_skin(img):
 @time_took
 def _main(img):
 #    img = scale_image(img, 4)
-    img = normalize(img,aggressive=0.001)
+    img = normalize(img,aggressive=0.005)
     skin = filter_skin(img)
     return img, skin
 

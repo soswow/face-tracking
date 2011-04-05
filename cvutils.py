@@ -264,3 +264,6 @@ def time_took(fn):
         else:
             return fn(*args, **kwargs)
     return wrapper
+
+def sizeOf(obj):
+    return cv.GetSize(obj)
