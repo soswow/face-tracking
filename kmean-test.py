@@ -1,63 +1,44 @@
 import cv
+from cvutils import *
+from contours import *
+import numpy as np
 
 def main():
-    #define MAX_CLUSTERS 5
-#    CvScalar color_tab[MAX_CLUSTERS];
+    img = cv.LoadImage("/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark"
+                       "/originalPics/2002/07/19/big/cv/bad/img_554.jpg")
+    img = normalize(img, aggressive=0.005)
+    mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
+    boxes, min_rects = get_skin_rectangles(seqs)
+    draw_boxes(boxes, img)
+    center = [(c[0],c[1]) for c,_,_ in min_rects]
+    verticies = []
+    for x,y,w,h in boxes:
+        verticies+=[(x,y), (x+w,y),(x,y+h),(x+w,y+h)]
 
-    img = cv.CreateImage( ( 500, 500 ), 8, 3 )
-    rng = cv.RNG(500)
+#    verticies = [(x+w/2, y+h/2) for x,y,w,h in boxes]
 
-    color_tab = [cv.CV_RGB(255, 0, 0),
-                 cv.CV_RGB(0, 255, 0),
-                 cv.CV_RGB(100, 100, 255),
-                 cv.CV_RGB(255, 0, 255),
-                 cv.CV_RGB(255, 255, 0)]
+    polys = map(cv.BoxPoints, min_rects)
+    cv.PolyLine(img, polys, True, cv.RGB(50,50,255), 2)
 
-    cv.NamedWindow( "clusters", 1 )
+    sample_count = len(verticies)
+    samples = cv.CreateMat(sample_count, 1, cv.CV_32FC2)
+    clusters = cv.CreateMat(sample_count, 1, cv.CV_32SC1)
+    [cv.Set1D(samples, i, verticies[i]) for i in range(sample_count)]
+    cv.KMeans2(samples, 3, clusters,
+                   (cv.CV_TERMCRIT_EPS + cv.CV_TERMCRIT_ITER, 10, 1.0))
+    color = [cv.RGB(255,10,10),
+             cv.RGB(255,255,10),
+             cv.RGB(10,255,255),
+             cv.RGB(255,10,255)]
+    for i, xy in enumerate(verticies):
+        cv.Circle(img, xy, 5, color[int(clusters[i,0])], thickness=-1)
 
-    while 1:
-        cluster_count = cv.RandInt(rng)
-        sample_count = cv.RandInt(rng)
-        points = cv.CreateMat( sample_count, 1, cv.CV_32FC2 )
-        clusters = cv.CreateMat( sample_count, 1, cv.CV_32SC1 )
+#    np_centers = np.asarray(verticies)
+#    result = cv.kmeans(verticies, 2, 0, 5, cv.CV_TERMCRIT_ITER)
 
-        #/* generate random sample from multigaussian distribution */
-        for k in range(cluster_count):
-            center = [cv.RandInt(rng), cv.RandInt(rng)]
-            point_chunk = cv.GetRows( points,
-                       k*sample_count/cluster_count,
-                       sample_count if k == (cluster_count - 1) else (k+1)*sample_count/cluster_count )
-            cv.RandArr(rng, point_chunk, cv.CV_RAND_NORMAL,
-                       (center[0],center[1],0,0),
-                       (img.width/6, img.height/6,0,0))
+    show_image(img)
 
-#        /* shuffle samples */
-#        for i in range(sample_count/2):
-#            pt1 = points->data.fl + cvRandInt(&rng)
-#            CvPoint2D32f* pt2 =
-#                (CvPoint2D32f*)points->data.fl + cvRandInt(&rng)
-#            cv.CV_SWAP( pt1, pt2, temp);
-#        }
 
-        cv.KMeans2( points, cluster_count, clusters,
-                   ( cv.CV_TERMCRIT_EPS | cv.CV_TERMCRIT_ITER, 10, 1.0 ))
-
-        cv.Zero(img)
-
-        for i in range(sample_count):
-            pt = points[i]
-            cluster_idx = clusters[i]
-            cv.Circle( img,
-                      pt,
-                      2,
-                      color_tab[cluster_idx],
-                      cv.CV_FILLED)
-
-        cv.ShowImage( "clusters", img )
-
-        key = cv.WaitKey(10)
-        if key == 27:
-            break
 
 if __name__ == "__main__":
     main()

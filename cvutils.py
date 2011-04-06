@@ -67,19 +67,23 @@ def normalize_plane(plane, aggressive=0):
         for k in range(255):
             down_val = cv.QueryHistValue_1D(hist, k)
             up_val = cv.QueryHistValue_1D(hist, 254-k)
-            if not down_threshold and down_val >= thr_value:
+            if down_threshold is None and down_val >= thr_value:
                 down_threshold = k
-            if not up_threshold and up_val >= thr_value:
+            if up_threshold is None and up_val >= thr_value:
                 up_threshold = k
-            if down_threshold and up_threshold:
+            if down_threshold is not None and up_threshold is not None:
                 break
-        sub_plane = image_empty_clone(plane)
-        add_plane = image_empty_clone(plane)
-        cv.SubS(plane, down_threshold, sub_plane)
-        cv.AddS(sub_plane, down_threshold+up_threshold, add_plane)
-#        cv.AddS(plane, down_color, sub_plane)
-#        cv.Threshold(plane,sub_plane,down_color,down_color,cv.CV_THRESH_)
-        plane = add_plane
+
+        sub_plane = None
+        if down_threshold > 0:
+            sub_plane = image_empty_clone(plane)
+            cv.SubS(plane, down_threshold, sub_plane)
+
+        add_plane = None
+        if down_threshold+up_threshold > 0:
+            add_plane = image_empty_clone(plane)
+            cv.AddS(sub_plane or plane, down_threshold+up_threshold, add_plane)
+        plane = add_plane or plane
     norm_plane = image_empty_clone(plane)
     cv.Normalize(plane, norm_plane, 0, 255, cv.CV_MINMAX)
     return norm_plane
