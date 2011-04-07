@@ -4,6 +4,16 @@ import cv
 
 from cvutils import *
 
+def get_mask(w,h):
+    img = cv.CreateImage((w,h), 8, 1)
+    cv.Zero(img)
+    t = int(w / 5)
+    k = int(w / 10)
+    cv.FillPoly(img,
+                (((k,t), (t+k,0), (w-t-k,0), (w-k,t), (w-k,h-t), (w-t-k, h), (t+k,h), (k,h-t)),),
+                255)
+    return img
+
 def samples_generator(img, w, h, slide_step=1, resize_step=1.2):
     _,_,img = get_hsv_planes(img)
     img = normalize_plane(img)
@@ -45,7 +55,9 @@ def profile():
 #    p.strip_dirs().sort_stats('cumulative').print_stats()
 
 def main():
-    test_take_samples()
+#    test_take_samples()
+    img = get_mask(32, 32)
+    show_image(img)
 
 if __name__ == "__main__":
     main()
