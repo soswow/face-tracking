@@ -100,28 +100,28 @@ def get_hemst_clusters(verticies, k=3):
 
     cluster_forest = hemst(G, k)
 
-    clusters = {}
+    node_cluster_mapping = {}
+    cluster_nodes_mapping = {}
     for i, tree in enumerate(cluster_forest):
         for node in tree.nodes():
-            clusters[node] = i
+            node_cluster_mapping[node] = i
+            if i not in cluster_nodes_mapping:
+                cluster_nodes_mapping[i] = []
+            cluster_nodes_mapping[i].append(node)
 
-    return clusters, mst
+    return node_cluster_mapping, cluster_nodes_mapping, mst
 
 
 def main():
     img, boxes, min_rects = get_image_w_boxes()
 
     verticies = [(x+w/2, y+h/2) for x,y,w,h in boxes]
-#    verticies = [(c[0],c[1]) for c,_,_ in min_rects]
 
-#    for x,y,w,h in boxes:
-#        verticies+=[(x,y), (x+w,y),(x,y+h),(x+w,y+h)]
+    corners = {}
+    for i, (x,y,w,h) in enumerate(boxes):
+        corners[i] = [(x,y), (x+w,y), (x,y+h), (x+w,y+h)]
 
     verticies = np.array(verticies)
-
-    get_hemst_clusters(verticies, k=3)
-
-    clusters, mst = draw_graph(img, mst, verticies, color=cv.RGB(255,0,255), thickness=2)
 
     colors = [cv.RGB(255,10,10),
              cv.RGB(255,255,10),
@@ -132,8 +132,25 @@ def main():
              cv.RGB(100,255,255),
              cv.RGB(255,100,255)]
 
-    for i,xy in enumerate(verticies):
-        cv.Circle(img, tuple(xy), 5, colors[clusters[i]], thickness=-1)
+    for k in range(1, 5):
+        node_cluster_map, cluster_nodes_map, mst = get_hemst_clusters(verticies, k)
+        for i in cluster_nodes_map.keys():
+            cluster_points = []
+            boxes = []
+            nodes = cluster_nodes_map[i]
+            for node_id in nodes:
+                cluster_points+=corners[node_id]
+                boxes.append(boxes[node_id])
+            x,y,w,h = cv.BoundingRect(cluster_points)
+
+            new_rect_area = w*h
+
+            cv.Rectangle(img, (x,y), (x+w,y+h),color=colors[k])
+
+    draw_graph(img, mst, verticies, color=cv.RGB(255,0,255), thickness=2)
+
+#    for i,xy in enumerate(verticies):
+#        cv.Circle(img, tuple(xy), 5, colors[clusters[i]], thickness=-1)
 
     show_image(img)
 
