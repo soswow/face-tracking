@@ -92,8 +92,7 @@ class RectangleBundle(object):
         return self.queue_iterator(H, self.horizontal_event_handler)
 
     def draw(self, img):
-        for r in self.rects:
-            cv.Rectangle(img,(r.left,r.top), (r.right, r.bottom), 255, thickness=1)
+        draw_boxes([(r.left, r.top, r.w, r.h) for r in self.rects], img, color=200, thickness=1)
 
 class Rectangle(object):
     def __init__(self,x,y,w,h):
@@ -130,22 +129,24 @@ def build_rectangle_bundle(tuple_list):
     return RectangleBundle([Rectangle(x,y,w,h) for x,y,w,h in tuple_list])
 
 def main():
-    img = cv.CreateImage((500,500),8,1)
+    img = cv.CreateImage((800,600),8,1)
     cv.Zero(img)
-    area = calculate_area([(20, 50, 20, 100),
-                         (50, 50, 100, 100),
-                         (70, 70, 100, 100),
-                         (130, 70, 100, 100),
-                         (130, 90, 60, 200),
-                         (90, 190, 100, 40),
-                         (200, 30, 20, 300),
-                         (260, 80, 40, 40)])
-#    area = bundle.rect_area()
-    print "Area is %d" % area
-    assert area == 36000
+    testData1 = [(390, 503, 47, 27), (302, 498, 30, 32), (240, 497, 21, 33), (269, 490, 37, 40), (320, 455, 17, 25),
+                 (11, 413, 104, 79), (191, 402, 68, 55), (330, 203, 245, 221), (87, 174, 126, 132), (220, 162, 106, 173)
+                 , (473, 147, 324, 383), (337, 146, 61, 78), (428, 140, 84, 65)]
 
-#    bundle.draw(img)
-#    show_image(img)
+    testData2 = [(20, 50, 20, 100), (50, 50, 100, 100), (70, 70, 100, 100), (130, 70, 100, 100), (130, 90, 60, 200),
+                 (90, 190, 100, 40), (200, 30, 20, 300), (260, 80, 40, 40)]
+
+    testData3 = [(91, 372, 106, 75), (333, 142, 37, 135), (210, 137, 46, 133), (229, 23, 129, 159), (3, 3, 138, 201), (305, 279, 66, 57), (206, 289, 85, 159)]
+
+    bundle = build_rectangle_bundle(testData3)
+    area = bundle.rect_area()
+    print "Area is %d" % area
+#    assert area == 36000
+
+    bundle.draw(img)
+    show_image(img)
 
 
 

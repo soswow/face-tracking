@@ -1,28 +1,12 @@
-import cv
-import itertools
-import numpy as np
+from __future__ import division
+
 import networkx as nx
 import itertools
+import math
 
 from cvutils import *
-from contours import *
+from swipeline import calculate_area
 
-
-def get_image_w_boxes():
-#    img = cv.LoadImage("/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark"
-#                       "/originalPics/2002/07/19/big/cv/bad/img_554.jpg")
-#    img = cv.LoadImage("/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark"
-#                       "/originalPics/2002/07/22/big/img_500.jpg")
-#                       "/originalPics/2002/07/22/big/img_570.jpg")
-#                       "/originalPics/2002/07/22/big/img_696.jpg")
-#                       "/originalPics/2002/07/22/big/img_835.jpg")
-    img = cv.LoadImage("/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.02.25/IMG_7324.CR2.jpg")
-
-    img = scale_image(normalize(img, aggressive=0.005))
-    mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
-    boxes, min_rects = get_skin_rectangles(seqs,minsize=15)
-    draw_boxes(boxes, img)
-    return img, boxes, min_rects
 
 def draw_graph(img, G, points, color=cv.RGB(0,255,255),thickness=1):
     for start, end in G.edges():
@@ -111,18 +95,7 @@ def get_hemst_clusters(verticies, k=3):
 
     return node_cluster_mapping, cluster_nodes_mapping, mst
 
-
-def main():
-    img, boxes, min_rects = get_image_w_boxes()
-
-    verticies = [(x+w/2, y+h/2) for x,y,w,h in boxes]
-
-    corners = {}
-    for i, (x,y,w,h) in enumerate(boxes):
-        corners[i] = [(x,y), (x+w,y), (x,y+h), (x+w,y+h)]
-
-    verticies = np.array(verticies)
-
+def get_color(i):
     colors = [cv.RGB(255,10,10),
              cv.RGB(255,255,10),
              cv.RGB(10,255,255),
@@ -131,28 +104,83 @@ def main():
              cv.RGB(255,255,100),
              cv.RGB(100,255,255),
              cv.RGB(255,100,255)]
+    if i >= len(colors):
+        return get_color(i-len(colors))
+    return colors[i]
 
-    for k in range(1, 5):
-        node_cluster_map, cluster_nodes_map, mst = get_hemst_clusters(verticies, k)
-        for i in cluster_nodes_map.keys():
-            cluster_points = []
-            boxes = []
-            nodes = cluster_nodes_map[i]
-            for node_id in nodes:
-                cluster_points+=corners[node_id]
-                boxes.append(boxes[node_id])
-            x,y,w,h = cv.BoundingRect(cluster_points)
+def get_corners_map(boxes):
+    corners = {}
+    for i, (x,y,w,h) in enumerate(boxes):
+        corners[i] = [(x,y), (x+w,y), (x,y+h), (x+w,y+h)]
+    return corners
 
-            new_rect_area = w*h
+def merge_boxes(boxes,img=None):
+    if img:
+        orig = cv.CloneImage(img)
+    threshold = 0.7
+    loan = 0.0
+    init_size = 0
+    while True:
+        for k in range(len(boxes)-1, 0, -1):
+            if threshold > 1:
+                threshold = 0.95
+            corners = get_corners_map(boxes)
+            if img:
+                img = cv.CloneImage(orig)
+                draw_boxes(boxes, img)
+            verticies = np.array([(x+w/2, y+h/2) for x,y,w,h in boxes])
+            if len(verticies) < k:
+                continue #Not enough verticies for K clusters
+            node_cluster_map, cluster_nodes_map, mst = get_hemst_clusters(verticies, k)
 
-            cv.Rectangle(img, (x,y), (x+w,y+h),color=colors[k])
+            for_merge = []
+            for i, nodes in cluster_nodes_map.items():
+                cluster_points = []
+                if len(nodes) > 1:
+                    for id in nodes:
+                        cluster_points += corners[id]
+                    current_boxes = [boxes[id] for id in nodes]
 
-    draw_graph(img, mst, verticies, color=cv.RGB(255,0,255), thickness=2)
+                    new_box = x,y,w,h = cv.BoundingRect(cluster_points)
+
+                    new_rect_area = w*h
+                    old_rects_area = calculate_area(current_boxes)
+
+                    relation = math.sqrt(old_rects_area)/math.sqrt(new_rect_area)
+                    if relation > threshold:
+                        loan += 1-relation
+                        for_merge.append((current_boxes, new_box))
+
+                    if img:
+                        print "Threshold = %s" % threshold
+                        print "k=%d, was area=%d, become=%d, %%%.3f (%d rects)" % \
+                              (k, old_rects_area, new_rect_area, relation, len(current_boxes))
+                        cv.Rectangle(img, (x,y), (x+w,y+h), color=get_color(k))
+
+            if for_merge:
+#                print "Loan = %.2f" % loan
+                threshold += 0.035 + loan/k
+            for merge_boxes, new_box in for_merge:
+                boxes = [box for box in boxes if box not in merge_boxes]
+                boxes.append(new_box)
+
+            #For drawing only
+            if img:
+                draw_graph(img, mst, verticies, color=cv.RGB(255,0,255), thickness=2)
+                show_image(img)
+
+        if len(boxes) == init_size:
+            break
+        init_size = len(boxes)
+    return boxes
+
+def main():
+    pass
 
 #    for i,xy in enumerate(verticies):
 #        cv.Circle(img, tuple(xy), 5, colors[clusters[i]], thickness=-1)
 
-    show_image(img)
+
 
 if __name__ == "__main__":
     main()

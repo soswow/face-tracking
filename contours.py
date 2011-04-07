@@ -3,6 +3,7 @@ import os
 
 from cvutils import *
 from skindetect import *
+from mstclustering import merge_boxes
 
 @time_took
 def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=False):
@@ -76,10 +77,6 @@ def seqs_boxes(seqs, minsize=25):
     boxes = [box for box in boxes if not is_inside(boxes, box)]
     return boxes, new_seqs
 
-def draw_boxes(boxes, img):
-    for box in boxes:
-        cv.Rectangle(img, box[:2], (box[2]+box[0], box[3]+box[1]), cv.RGB(50,255,50), thickness=2)
-
 def seq_min_rects(seqs):
     min_rects = []
     for seq in seqs:
@@ -94,18 +91,28 @@ def get_skin_rectangles(seqs, minsize=25):
     return boxes, min_rects
 
 @time_took
-def _rect_stuff(seqs, img):
+def _rect_stuff(seqs):
     boxes, min_rects = get_skin_rectangles(seqs)
     draw_boxes(boxes, img)
     polys = map(cv.BoxPoints, min_rects)
     cv.PolyLine(img, polys, True, cv.RGB(50,50,255), 2)
+#    return boxes
 
-def draw_face_contour_boxes(img):
+@time_took
+def _boxes(seqs,img,with_merge):
+    boxes, min_rects = get_skin_rectangles(seqs)
+    draw_boxes(boxes,img,color=cv.RGB(255,255,255),thickness=1)
+    if with_merge:
+        boxes = merge_boxes(boxes)
+    draw_boxes(boxes,img)
+
+def draw_face_contour_boxes(img, with_merge=True):
     img = normalize(img, aggressive=0.005)
     mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
     if not seqs:
         return img
-    _, time2 = _rect_stuff(seqs, mask, time_took=True)
+#    _, time2 = _rect_stuff(seqs, mask, time_took=True)
+    _,time2 = _boxes(seqs,mask,with_merge, time_took=True)
     write_info(mask, "%.6f face, %.6f boxes" % (time, time2))
     return mask
 
@@ -113,8 +120,8 @@ def _webcam_test():
     cap = cv.CaptureFromCAM(0)
     while 1:
         img = cv.QueryFrame(cap)
+#        img = draw_face_contour_boxes(img)
         img = draw_face_contour_boxes(img)
-
         cv.ShowImage("mask", img)
 #        cv.ShowImage("img", img)
         key = cv.WaitKey(10)
@@ -138,10 +145,25 @@ def merge_images(img1, img2):
     cv.ResetImageROI(merged)
     return merged
 
+def get_face_in_boxes(img):
+    img = normalize(img, aggressive=0.005)
+    mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
+    boxes, min_rects = get_skin_rectangles(seqs,minsize=15)
+    boxes = merge_boxes(boxes)
+    return boxes
+
+def _process_one_file(full_path, output_dir, name):
+    img = scale_image(cv.LoadImage(full_path))
+#            img = cv.LoadImage(full_path)
+    img_with_cont = draw_face_contour_boxes(img)
+#    merged = merge_images(img_with_cont, img)
+    cv.SaveImage(os.path.join(output_dir, name), img_with_cont)
+
 def batch_test():
 #    path = "/Users/soswow/Documents/Face Detection/Frontal face dataset"
-    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.02.25"
-#    path = "/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark/originalPics/2002/07/19/big/cv/bad"
+#    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.02.25"
+    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1"
+#    path = "/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark/originalPics/2002/07/19/big/"
 #    path = "/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark/originalPics/2002/07/21/big/"
     output_dir = os.path.join(path, "cv")
     if not os.path.exists(output_dir):
@@ -149,16 +171,15 @@ def batch_test():
     for full_path, name in directory_files(path):
         print name
         try:
-            img = scale_image(cv.LoadImage(full_path))
-#            img = cv.LoadImage(full_path)
-            img_with_cont = draw_face_contour_boxes(img)
-            merged = merge_images(img_with_cont, img)
-            cv.SaveImage(os.path.join(output_dir, name), merged)
+            _process_one_file(full_path, output_dir, name)
         except IOError:
             print "ignoring %s" % name
     print 'Done'
 
 if __name__ == "__main__":
-    batch_test()
+    _webcam_test()
+#    _process_one_file("/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1/IMG_7348.JPG",
+#    "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1/cv","IMG_7348.JPG")
+#    batch_test()
 #    img = cv.LoadImage("sample/img_563.jpg")
 #    get_mask_with_contour(img)
