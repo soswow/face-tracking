@@ -88,7 +88,7 @@ def normalize_plane(plane, aggressive=0):
     cv.Normalize(plane, norm_plane, 0, 255, cv.CV_MINMAX)
     return norm_plane
 
-def normalize(img, aggressive=0.005):
+def normalize_rgb(img, aggressive=0.005):
     rgb = get_rgb_planes(img)
     out_rgb = []
     for plane in rgb:

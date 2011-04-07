@@ -7,7 +7,7 @@ from mstclustering import merge_boxes
 
 @time_took
 def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=False):
-    img = normalize(img, aggressive=0.005)
+    img = normalize_rgb(img, aggressive=0.005)
     mask = skin_mask(img)
 
     di_mask = image_empty_clone(mask)
@@ -107,7 +107,7 @@ def _boxes(seqs,img,with_merge):
     draw_boxes(boxes,img)
 
 def draw_face_contour_boxes(img, with_merge=True):
-    img = normalize(img, aggressive=0.005)
+    img = normalize_rgb(img, aggressive=0.005)
     mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
     if not seqs:
         return img
@@ -146,7 +146,7 @@ def merge_images(img1, img2):
     return merged
 
 def get_face_in_boxes(img):
-    img = normalize(img, aggressive=0.005)
+    img = normalize_rgb(img, aggressive=0.005)
     mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
     boxes, min_rects = get_skin_rectangles(seqs,minsize=15)
     boxes = merge_boxes(boxes)

@@ -98,7 +98,7 @@ def webcam_rgb_histograms():
 
 def get_source_and_normal_planes(img,aggressive=0.001):
     r,g,b = get_rgb_histogram_images(img,width=255)
-    norm_img = normalize(img,aggressive)
+    norm_img = normalize_rgb(img,aggressive)
     norm_r, norm_g, norm_b =get_rgb_histogram_images(norm_img,width=255)
     return {"img":img,
              "r":r,
@@ -131,7 +131,7 @@ def gui():
     def drag(x):
         print x
     cv.CreateTrackbar("track1","Window", 0, 100, drag)
-    img = normalize(cv.LoadImage("sample/0003_00000002.jpg"))
+    img = normalize_rgb(cv.LoadImage("sample/0003_00000002.jpg"))
     cv.ShowImage("Window",img)
     cv.WaitKey(0)
 
@@ -145,7 +145,7 @@ def test1():
     for src in ["sample/0003_00000002.jpg", "sample/img_563.jpg","sample/lena.bmp"]:
         img = cv.LoadImage(src)
         eq_img = equalize(img)
-        norm_img = normalize(img, 0.05)
+        norm_img = normalize_rgb(img, 0.05)
         img_skin, time1 = filter_skin(img, time_took=True)
         eq_skin, time2 = filter_skin(eq_img, time_took=True)
         norm_skin, time3 = filter_skin(norm_img, time_took=True)

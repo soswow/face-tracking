@@ -94,7 +94,7 @@ def filter_skin(img):
 @time_took
 def _main(img):
 #    img = scale_image(img, 4)
-    img = normalize(img,aggressive=0.005)
+    img = normalize_rgb(img,aggressive=0.005)
     skin = filter_skin(img)
     return img, skin
 
