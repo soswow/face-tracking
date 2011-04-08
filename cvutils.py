@@ -284,3 +284,7 @@ def draw_boxes(boxes, img, color=cv.RGB(50,255,50), thickness=2):
     for x,y,w,h in boxes:
         cv.Rectangle(img, (x,y), (x+w, y+h), color, thickness=thickness)
         cv.PutText(img, "%d|%d" % (x,y), (x+6,y+13), small_font, cv.RGB(255,255,255))
+
+def prepare_bw(img):
+    _,_,img = get_hsv_planes(img)
+    return normalize_plane(img)

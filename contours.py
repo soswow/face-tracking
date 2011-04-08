@@ -3,6 +3,7 @@ import os
 
 from cvutils import *
 from skindetect import *
+from utils import *
 from mstclustering import merge_boxes
 
 @time_took
@@ -128,11 +129,7 @@ def _webcam_test():
         if key == 27:
             break
 
-def directory_files(path):
-    for _, _, files in os.walk(path, topdown=False):
-        print "Yielding %d files ... " % len(files)
-        for name in files:
-            yield os.path.join(path, name), name
+
 
 def merge_images(img1, img2):
     w,h = sizeOf(img1)
