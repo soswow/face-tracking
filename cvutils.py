@@ -273,18 +273,24 @@ def sizeOf(obj):
     return cv.GetSize(obj)
 
 default_font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN, 1, 1)
-def write_info(img, text, font=default_font):
-    cv.PutText(img, text, (0,15), font, cv.RGB(255,255,255))
+def write_info(img, text, font=default_font, color=cv.RGB(255,255,255)):
+    cv.PutText(img, text, (0,15), font, color)
 
 def memory():
     return cv.CreateMemStorage()
 
 small_font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN,1,1)
-def draw_boxes(boxes, img, color=cv.RGB(50,255,50), thickness=2):
+def draw_boxes(boxes, img, color=cv.RGB(50,255,50), thickness=2,with_text=True):
     for x,y,w,h in boxes:
         cv.Rectangle(img, (x,y), (x+w, y+h), color, thickness=thickness)
-        cv.PutText(img, "%d|%d" % (x,y), (x+6,y+13), small_font, cv.RGB(255,255,255))
+        if with_text:
+            cv.PutText(img, "%d|%d" % (x,y), (x+6,y+13), small_font, cv.RGB(255,255,255))
 
-def prepare_bw(img):
-    _,_,img = get_hsv_planes(img)
+def prepare_bw(img, take_v_plane=True):
+    if take_v_plane:
+        _,_,img = get_hsv_planes(img)
+    else:
+        new_img = cv.CreateImage(sizeOf(img), 8 , 1)
+        cv.CvtColor(img, new_img, cv.CV_BGR2GRAY)
+        img = new_img
     return normalize_plane(img)

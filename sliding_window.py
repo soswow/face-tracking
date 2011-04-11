@@ -15,16 +15,19 @@ def get_mask(w,h):
     cv.FillPoly(img,(poly,), 255)
     return img
 
-def samples_generator(img, w, h, slide_step=1, resize_step=1.2):
-    img = prepare_bw(img)
+def samples_generator(img, w, h, slide_step=1, resize_step=1.2, bw_from_v_plane=True):
+    img = prepare_bw(img,take_v_plane=bw_from_v_plane)
     ow, oh = sizeOf(img)
     if ow < w and oh < h:
         raise Exception("Requested sample is bigger than source")
-    mask = get_mask(w,h)
+#    mask = get_mask(w,h)
     cw, ch = ow*resize_step, oh*resize_step
+    boxy = cv.CreateImage((w,h),8,1)
     while cw > w and ch > h:
         ch /= resize_step
         cw /= resize_step
+
+        k = ow / cw
 
         if cw < w or ch < h:
             cw,ch = w,h
@@ -36,19 +39,22 @@ def samples_generator(img, w, h, slide_step=1, resize_step=1.2):
         for cx in range(0,cw-w+1,slide_step):
             for cy in range(0,ch-h+1,slide_step):
                 cv.SetImageROI(img, (cx,cy,w,h))
-
+                cv.Zero(boxy)
+                cv.Copy(img, boxy)
 #                To heavy to have mask
 #                dst = cv.CreateImage((w,h), 8, 1)
-#                cv.Copy(img, img, mask)
-                yield img
+#                cv.Zero(dst)
+#                cv.Copy(img, dst, mask)
+                yield boxy, (cx*k,cy*k,w*k,h*k)
         cv.ResetImageROI(img)
 
 @time_took
 def test_take_samples():
+    path = "/Users/soswow/Documents/Face Detection/test/lenas"
     img = cv.LoadImage("sample/lena.bmp")
-    sample_gen = samples_generator(img, 50, 50, slide_step=4, resize_step=1.3)
-    for i, sample in enumerate(sample_gen):
-        pass
+    sample_gen = samples_generator(img, 32, 32, slide_step=8, resize_step=1.6)
+    for i, (sample,_) in enumerate(sample_gen):
+        cv.SaveImage("%s/%d.png" % (path, i), sample)
 
 def profile():
     import cProfile
@@ -60,9 +66,9 @@ def profile():
 
 def main():
 #    profile()
-#    test_take_samples()
-    img = get_mask(32, 32)
-    show_image(img)
+    test_take_samples()
+#    img = get_mask(32, 32)
+#    show_image(img)
 
 if __name__ == "__main__":
     main()

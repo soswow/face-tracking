@@ -1,0 +1,347 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[12pt]{report}
+
+\usepackage{tocloft}
+
+%\setlength\cftparskip{-2pt}
+%\setlength\cftbeforechapskip{0pt}
+
+\usepackage{xecyr}
+%\usepackage[utf8x]{inputenc}
+\usepackage[russian]{babel}
+
+%\usepackage[utf8x]{inputenc}
+%\usepackage[english,russian]{babel}
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm]{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{a4paper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+%\usepackage{amssymb}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{}
+\rhead{\footnotesize{Система слежения за лицом человека}}
+\cfoot{}
+\rfoot{\thepage}
+
+\pagenumbering{arabic}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{fontspec,xltxtra,xunicode}
+\defaultfontfeatures{Mapping=tex-text}
+\setromanfont[Mapping=tex-text]{Times New Roman}
+\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Gill Sans}
+\setmonofont[Scale=MatchLowercase]{Andale Mono}
+
+% Will Robertson's fontspec.sty can be used to simplify font choices.
+% To experiment, open /Applications/Font Book to examine the fonts provided on Mac OS X,
+% and change "Hoefler Text" to any of these choices.
+
+
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{12pt plus 0.5ex minus 0.2ex}
+\renewcommand{\headrulewidth}{0pt}
+
+%\title{Искусственный интеллект в играх на примере игры "Войны планет"}
+%\author{Александр Мочёнов}
+%\date{26 Октября 2010 г.}                                           
+% Activate to display a given date or no date
+
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\bf\normalsize\uppercase}{\thechapter}{2pc}{}
+\titleformat{\section}[hang]{\bf\normalsize}{\thesection}{2pc}{}	
+\titleformat{\subsection}[hang]{\bf\normalsize}{\thesubsection}{2pc}{}
+\titlespacing{\chapter}{0pt}{*4}{*1}
+
+\usepackage{hyperref} 
+%\usepackage{graphicx}
+\usepackage{pstricks}
+%\DeclareGraphicsExtensions{.png}
+
+%\newcommand{\executeiffilenewer}[3]{%
+% \ifnum\pdfstrcmp{\pdffilemoddate{#1}}%
+% {\pdffilemoddate{#2}} >0 {\immediate\write18{#3}}\fi%
+%}
+%
+%\newcommand{\includesvg}[1]{%
+%\executeiffilenewer{#1.svg}{#1.pdf}%
+%{inkscape -z -D --file=#1.svg --export-pdf=#1.pdf --export-latex}%
+%\input{#1.tex}%
+%}
+\usepackage{subfig}
+
+\usepackage{url}
+
+\usepackage{natbib}
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+\newenvironment{myItemize}{
+	\begin{itemize}
+  		\setlength{\itemsep}{1pt}
+  		\setlength{\parskip}{0pt}
+  		\setlength{\parsep}{0pt}
+}{\end{itemize}}
+
+\newenvironment{myEnumerate}{
+	\begin{enumerate}
+  		\setlength{\itemsep}{1pt}
+  		\setlength{\parskip}{0pt}
+  		\setlength{\parsep}{0pt}
+}{\end{enumerate}}
+
+\usepackage{totcount}
+\regtotcounter{figure}
+\regtotcounter{table}
+\regtotcounter{chapter}
+
+\usepackage[acronym,toc]{glossaries}
+\makeglossaries
+%\input{glossary}
+
+
+\renewcommand{\cfttoctitlefont}{\normalsize\textbf}
+\setlength{\cftaftertoctitleskip}{18pt}
+
+
+\usepackage{listings}
+
+
+\begin{document}
+%\renewcommand{\chaptername}{} 
+%\renewcommand{\thechapter}{} 
+%\renewcommand{\thesection}{\arabic{section}} 
+
+\begin{titlepage}
+  \begin{center}
+	\uppercase{Высшая школа майнор}\\*
+	Институт инфотехнологии\\*
+	Веб программирование\\[8cm]
+	Александр Мочёнов\\*
+	IT-3-Q-V-Tal\\[0.5cm]
+	\large
+	\textbf{Система слежения за лицом человека (на основе нейронной сети? (и облостей с кожным покровом?))}\\[1cm]
+	\normalsize
+	Дипломная работа\\[2cm]
+	\begin{flushright}
+		Руководитель:Jelena Faronova, MSc\\[7cm]
+	\end{flushright}
+	Таллинн 2010
+  \end{center}
+\end{titlepage}
+
+\tableofcontents{\thispagestyle{fancyplain}}
+
+\chapter*{Резюме}
+\addcontentsline{toc}{chapter}{Резюме}
+\thispagestyle{fancy}
+
+
+%\printglossary[title=Терминалогия и переводы,style=fancy,toctitle=Терминалогия и переводы]
+
+\chapter*{Введение}
+\addcontentsline{toc}{chapter}{Введение}
+\thispagestyle{fancy}
+
+Цель, постановка Задач, гипотеза
+
+\chapter{Введение в предметную область}
+\thispagestyle{fancy}
+
+Теоретическая часть.
+
+Про Computer Vision в целом.
+
+Где и зачем применяется face detection?
+
+* Обзор методов и решений. (способы face detection’a) (для каждого подпункт?) (С ROI, с цветом одежды, с отделением фона, с выделением движ. объектов)
+
+* целые системы подобно реализуемой (голова робота и всё такое)
+
+* про real-time
+
+\chapter{Предлагаемый метод решения}
+\thispagestyle{fancy}
+
+Краткое описание всей системы. Диаграмма.
+
+Модульность. Какие-то части могут быть реализованы по разному - но сами модули такие как тут.
+
+используемые програмные библиотеки: OpenCV, PyBrain, ...
+
+\section{Модуль нахождения лица}
+
+\subsection{Нормализация контраста и баланс белого}
+(предобработка)
+
+Описание алгоритма.
+
+Много примеров, гистограмм, псевдокод. (без особых результирующих картинок)
+
+\subsection{Поиск зон с цветом кожного прокрова}
+Общая информация о проблеме.
+
+- зачем применяют 
+
+	--про поиск картинок для взрослых
+	
+	--для face detetection
+\subsubsection{Возможные пути решения}
+Уже существующие различные методы нахождения цвета кожного покрова. Описание тут.
+\subsubsection{Проблема выбора цветового пространства}
+Про цветовые пространства. Про информативность каждого из них.
+\subsubsection{Метод статического диапозона}
+В работе реализуется он. Почему? (просто, быстро, достаточно эффективный)
+Описание метода, псевдокод?
+
+\subsection{Выделение и объединение областей с цветом кожного покрова}
+Общии слова переходного характера. 
+\subsubsection{Выделение найденных областей}
+Описание алгоритма (сжатие, расширение) -  избавление от шума, более адекватные замкнутые области.
+\subsubsection{Кластеризация}
+Обоснование необходимости. Зачем объеденять.	
+
+Почему обычный k-mean не подходит? примеры.
+
+Описание метода кластеризации через минимальное оставное дерево. Что такое оставное дерево?
+
+Примеры мест (ситуаций), где это необходимо. Где лицо состоит из нескольких небольших участков и полезно объеденять.
+
+Псевдокод, диаграммы процесса.
+\subsection{Фильтрация по пропорциям и заполненности}
+Описание возможного постпроцессинга для отфильтровывания неподходящих участков.
+\subsection{Классификация}
+Описание проблеммы классификации в целом.
+Опять о том какие методы бывают. О том, что сейчас применяют чаще.
+\subsubsection{Выбор метода ИНС для классификации}
+Почему выбрал ann? (real-time, простота понимания и использования)
+
+Как это делают другие?
+\subsubsection{Описание сети}
+Несколько сетей для разных представлений. B/w, Edges
+
+О проблемах недофитинга и overfit'инга.
+
+Описание структуры ИНС. Почему именно такая.
+
+bias'ы, преждевременная остановка, ...
+
+Код с сосзданием сети.
+\subsubsection{Обучение сети}
+Первый этап.
+
+Проблема и важность выбора примеров для обучения.
+
+Применяемые базы лиц, усреднённые лица, возможная рамочка
+
+Проблема выбора "не лиц".
+
+Описание подготовки выборок для тренировки и тестирования.
+
+Код PyBrain по тренеровки сети.
+\subsubsection{Применение сети}
+Сохранение и загрузка обученной сети.
+
+Понятие порога.
+
+sliding window алгоритм. диаграмы, код.
+
+Кластеризация всех найденных лиц в группы, что бы отсечь случайные Flase positives. Overlap'ы и всё такое.
+\section{Выбор цели для слежения}
+найти наибольшее лицо
+
+искать ближайшее к тому, за которым уже следим
+\section{Механическая часть}
+Работа с сервоприводами
+\subsection{описание установки для демонстрации}
+arduino,
+сервоприводы,
+камеры
+\subsection{Подсчёт вектора движения}
+\subsection{Arduino}
+коммуникация c PC
+
+листинги кода, диаграммы (этого нет =/ )
+
+
+
+
+
+\chapter{Результаты работы (Испытания?)}
+\section{Автоконтраст и баланс белого}
+Когда работает? А когда не очень? примеры и того и того.
+
+Возможные пути решения.
+\section{Поиск зон с кожным покровом}
+Когда работает? А когда не очень? примеры и того и того.
+
+Пути решение. (Другой метод, выбор более узкой области диапазонов. - пример возможного приложения для сбора образцов)
+
+О том что хорошо, что больше false negative, чем false positive
+\section{Объединение областей}
+Примеры хорошой и плохой работы.
+
+Как можно улучшить. (выбор другого алгоритма выбора цвета кожи, подгонка параметров кластеризации)
+\section{(Результаты) работа с ИНС}
+\subsection{Различные представления}
+Почему представление с пограничными областями не работает. Усреднённые морды где видно проблему. Как-то улучшить алгоритм выявления пограничных областей? Какие-то другие представления?
+\subsection{(Результаты) обучения и тестирования}
+Цифры, проценты результативности на тестовых данных. False positive, False negative. Примеры неузнанных лиц, примеры узнанных не лиц. Усреднённые нелица, усреднённые ненайденные лица.
+Как можно улучшить?
+
+- Правильная структура сети, выделяющая характеристики (features)
+
+- Более тщательный подбор примеров (глаза на одном месте, одна ореинтация)
+
+- Разные классы для разных поз (направление взгляда - прямо, вверх, вниз, вправо, влево)
+
+- Икрементальный процесс обучения (где все falses из тестового набора добавляются обратно в набор обучения)
+\subsection{Выбор лица и arduino}
+Так и не успел закончить эту часть. Что писать в результатах пока не знаю.
+\section{Испытание всей системы}
+результаты испытаний.
+
+небольшие ошибка на всех уровнях в итоге дают неудовлетворительный результат. улучшать необходимо каждый из элементов в отдельности.
+
+- о проблеме 2-7 процентах на 97 000 примерах с одного кадра. Много false positive. Сложно настроить правильные порог.
+
+- о проблеме со скорость. Решение - оптимизация и использование psyco.
+
+\chapter*{Заключение и выводы}
+\addcontentsline{toc}{chapter}{Заключение и выводы}
+\thispagestyle{fancy}
+
+
+\appendix
+\chapter{Приложение. Отчёт по курсовой практике}
+%\pagebreak
+%-
+
+%\clearpage
+%\pagebreak
+%-
+
+%\clearpage
+%\pagebreak
+%-
+
+%\clearpage
+%\pagebreak
+%-
+%\clearpage
+
+
+%\clearpage
+
+\addcontentsline{toc}{chapter}{Литература}
+
+\bibliographystyle{plainnat}
+\bibliography{biblio}
+
+\end{document}  

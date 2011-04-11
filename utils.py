@@ -1,11 +1,26 @@
 import os
 import random
+from os.path import join
+
+def yield_files_in_path(path):
+    for top, dirs, files in os.walk(path, topdown=False):
+#        print "Yielding %d files ... " % len(files)
+        for name in files:
+            yield  join(top, name), name
+#        for dir in dirs:
+#            print "Accessing %s dir" % dir
+#            for file in yield_files_in_path(join(top, dir)):
+#                yield file
 
 def directory_files(path):
-    for _, _, files in os.walk(path, topdown=False):
-        print "Yielding %d files ... " % len(files)
+    output = []
+    for top, dirs, files in os.walk(path, topdown=False):
+#        print "Yielding %d files ... " % len(files)
         for name in files:
-            yield os.path.join(path, name), name
+            output.append((join(top, name), name))
+        for dir in dirs:
+            output += join(top, dir)
+    return output
 
 def random_from_generator(gen, every_n, until=None):
     next = random.randint(0, every_n)
