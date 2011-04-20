@@ -6,10 +6,10 @@ from cvutils import *
 from utils import *
 
 def main():
-#    root = "/Users/soswow/Documents/Face Detection/test/negative"
+    root = "/Users/soswow/Documents/Face Detection/test/negative"
 #    root = "/Users/soswow/Documents/Face Detection/test/sets/negative"
 #    root = "/Users/soswow/Documents/Face Detection/test/edge_view/positive"
-    root = "/Users/soswow/Documents/Face Detection/test/webcam"
+#    root = "/Users/soswow/Documents/Face Detection/test/sobel/positive"
 #    root = "/Users/soswow/Documents/Face Detection/test/sets/positive"
 #    root = "/Users/soswow/Documents/Face Detection/test/falses"
 

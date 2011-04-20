@@ -7,9 +7,11 @@ from utils import *
 from mstclustering import merge_boxes
 
 @time_took
-def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=False):
-    img = normalize_rgb(img, aggressive=0.005)
-    mask = skin_mask(img)
+def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=False,
+                          cont_color=cv.RGB(255, 50, 50), normalize=True, skin_version=1, strong=False):
+    if normalize:
+        img = normalize_rgb(img, aggressive=0.005)
+    mask = skin_mask(img) if skin_version == 1 else skin_mask2(img)
 
     di_mask = image_empty_clone(mask)
     cv.Dilate(mask, di_mask)
@@ -36,7 +38,11 @@ def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=Fal
         if with_init_mask:
             cv.Merge(mask,mask,mask,None,er_seq_img)
 
-        cv.DrawContours(er_seq_img, seqs, cv.RGB(255,50,50), 0, 10, thickness=2)
+        if strong:
+            cv.DrawContours(er_seq_img, seqs, cont_color, 0, 10, thickness=3)
+            cv.DrawContours(er_seq_img, seqs, cv.RGB(0,0,0), 0, 10, thickness=1)
+        else:
+            cv.DrawContours(er_seq_img, seqs, cont_color, 0, 10, thickness=1)
         result.append(er_seq_img)
 
     if ret_cont:
@@ -131,10 +137,10 @@ def _webcam_test():
 
 
 
-def merge_images(img1, img2):
-    w,h = sizeOf(img1)
-    new_size, second_roi = ((w*2, h), (w,0,w,h)) if h*1.3 > w else ((w, h*2), (0,h,w,h))
-    merged = cv.CreateImage(new_size, 8, 3)
+def merge_images(img1, img2, vertical=None):
+    w,h = sizeOf(img2)
+    new_size, second_roi = ((w*2, h), (w,0,w,h)) if h*1.3 > w and not vertical else ((w, h*2), (0,h,w,h))
+    merged = cv.CreateImage(new_size, img1.depth, img1.channels)
     cv.SetImageROI(merged, (0,0,w,h))
     cv.Copy(img1, merged)
     cv.SetImageROI(merged, second_roi)
@@ -158,8 +164,10 @@ def _process_one_file(full_path, output_dir, name):
 
 def batch_test():
 #    path = "/Users/soswow/Documents/Face Detection/Frontal face dataset"
-#    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.02.25"
-    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1"
+    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.02.25"
+#    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2010.12.22-1"
+#    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2010.12.22-2"
+#    path = "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1"
 #    path = "/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark/originalPics/2002/07/19/big/"
 #    path = "/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark/originalPics/2002/07/21/big/"
     output_dir = os.path.join(path, "cv")
@@ -173,10 +181,22 @@ def batch_test():
             print "ignoring %s" % name
     print 'Done'
 
+ft = "latex/Pictures/"
+def main():
+    img = cv.LoadImage(ft+"lesleythe-science-girl-7.jpg")
+#    img = normalize_rgb(img, aggressive=0.002)
+#    mask = skin_mask2(img)
+    mask = get_mask_with_contour(img,ret_img=True)
+
+#    img, skin = _main(img,version=2)
+#    cv.SaveImage(ft+"dr_house_skin_mask_3.png", mask)
+    show_images({"img":img, "mask":mask[0]})
+
 if __name__ == "__main__":
-    _webcam_test()
+#    main()
+#    _webcam_test()
 #    _process_one_file("/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1/IMG_7348.JPG",
 #    "/Users/soswow/Pictures/Downloaded Albums/t992514/devclub-2011.01.26-1/cv","IMG_7348.JPG")
-#    batch_test()
+    batch_test()
 #    img = cv.LoadImage("sample/img_563.jpg")
 #    get_mask_with_contour(img)

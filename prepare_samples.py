@@ -4,6 +4,7 @@ import cv
 import shutil
 import random
 from os.path import join as pjoin
+from laplace import laplace
 
 from sliding_window import *
 from utils import *
@@ -168,11 +169,17 @@ def clone_with_mask():
 def clone_with_edges():
     clone_with_(get_canny_img, "edge_view")
 
+def clone_with_laplace():
+    clone_with_(laplace, "sobel")
+
 def main():
+    global root_folder
+    root_folder += "sobel/"
+#    clone_with_laplace()
 #    clone_with_mask()
-#    make_sets()
+    make_sets()
 #    clone_with_edges()
-    prepare_negatives()
+#    prepare_negatives()
 #    wild_face()
 #    make_selection()
 #    crop_att_faces()

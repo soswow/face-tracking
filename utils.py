@@ -18,8 +18,8 @@ def directory_files(path):
 #        print "Yielding %d files ... " % len(files)
         for name in files:
             output.append((join(top, name), name))
-        for dir in dirs:
-            output += join(top, dir)
+#        for dir in dirs:
+#            output += join(top, dir)
     return output
 
 def random_from_generator(gen, every_n, until=None):

@@ -4,8 +4,7 @@ from contours import *
 import numpy as np
 
 def main():
-    img = cv.LoadImage("/Users/soswow/Documents/Face Detection/Face Detection Data Set and Benchmark"
-                       "/originalPics/2002/07/19/big/cv/bad/img_554.jpg")
+    img = cv.LoadImage("latex/Pictures/IMG_7324.CR2.jpg")
     img = normalize_rgb(img, aggressive=0.005)
     mask, seqs, time = get_mask_with_contour(img, ret_cont=True, ret_img=True, with_init_mask=False, time_took=True)
     boxes, min_rects = get_skin_rectangles(seqs)

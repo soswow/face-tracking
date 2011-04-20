@@ -114,13 +114,14 @@ def get_corners_map(boxes):
         corners[i] = [(x,y), (x+w,y), (x,y+h), (x+w,y+h)]
     return corners
 
-def merge_boxes(boxes,img=None):
+def merge_boxes(boxes,img=None, threshold=0.7, plus_tr=0.035):
     if img:
         orig = cv.CloneImage(img)
-    threshold = 0.7
+#    threshold = 0.7
     loan = 0.0
     init_size = 0
     while True:
+        init_size = len(boxes)
         for k in range(len(boxes)-1, 0, -1):
             if threshold > 1:
                 threshold = 0.95
@@ -159,7 +160,7 @@ def merge_boxes(boxes,img=None):
 
             if for_merge:
 #                print "Loan = %.2f" % loan
-                threshold += 0.035 + loan/k
+                threshold += plus_tr + loan/k
             for merge_boxes, new_box in for_merge:
                 boxes = [box for box in boxes if box not in merge_boxes]
                 boxes.append(new_box)
@@ -171,7 +172,6 @@ def merge_boxes(boxes,img=None):
 
         if len(boxes) == init_size:
             break
-        init_size = len(boxes)
     return boxes
 
 def main():

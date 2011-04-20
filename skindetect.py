@@ -37,19 +37,36 @@ def filter_by_hsv(img, ranges):
     cv.And(v_mask, s_mask, hsv_mask, mask=h_mask)
     return hsv_mask
 
-def rg_filter(r, g):
-    rg_sub = image_empty_clone(r)
-    cv.Sub(r,g,rg_sub)
-    rg_sub_thres = image_empty_clone(r)
-    cv.Threshold(rg_sub,rg_sub_thres,1,255,cv.CV_THRESH_BINARY)
+def first_bigger_then_second(a, b):
+    sub = image_empty_clone(a)
+    cv.Sub(a,b,sub) #Thouse with R < G will become 0
+    binary = image_empty_clone(a)
+    #Make binary image
+    cv.Threshold(sub,binary,1,255,cv.CV_THRESH_BINARY)
+    return binary
 
-    rg_diff = image_empty_clone(r)
-    cv.AbsDiff(r,g,rg_diff)
-    rg_diff_thres = image_empty_clone(r)
-    cv.Threshold(rg_diff,rg_diff_thres,11,255,cv.CV_THRESH_BINARY)
+def abs_diff_threshold(a,b,level):
+    abs_diff = image_empty_clone(a)
+    cv.AbsDiff(a,b,abs_diff)
+    binary = image_empty_clone(a)
+    cv.Threshold(abs_diff,binary,level,255,cv.CV_THRESH_BINARY)
+    return binary
+
+def rg_filter(r, g, rg_diff=11, b=None):
+    #Checking rule: R > G
+    rg_sub_binary = first_bigger_then_second(r,g)
+
+    #Checking rule: R > B
+    rb_sub_binary= first_bigger_then_second(r,b) if b else None
+
+    #Checking rule: |R - G| >= 11
+    rg_diff_thres = abs_diff_threshold(r,g,rg_diff)
 
     res = image_empty_clone(r)
-    cv.And(rg_diff_thres, rg_sub_thres, res)
+    cv.And(rg_diff_thres, rg_sub_binary, res)
+
+    if rb_sub_binary:
+        cv.And(res, rb_sub_binary, res)    
     return res
 
 def norm_rg_filter(r,g,b):
@@ -78,38 +95,106 @@ def skin_mask(img):
     cv.And(hsv_mask,rg_mask,tmp)
     cv.And(tmp,nr_ng_mask,total_mask)
 
+    #TODO What is this?
     th = image_empty_clone(total_mask)
     cv.Smooth(total_mask,total_mask,cv.CV_MEDIAN, 5, 5)
     cv.Threshold(total_mask, th, 25, 255, cv.CV_THRESH_BINARY)
 
-    return th
+    return total_mask
 
-@time_took
-def filter_skin(img):
-    mask = skin_mask(img)
-    res = image_empty_clone(img)
-    cv.And(img, merge_rgb(mask,mask,mask), res)
+def rgb_min_max_diff_plane(r,g,b,level):
+    rg_max = image_empty_clone(r)
+    cv.Max(r,g,rg_max)
+    rgb_max = image_empty_clone(b)
+    cv.Max(rg_max,b,rgb_max)
+
+    rg_min = image_empty_clone(r)
+    cv.Min(r,g,rg_min)
+    rgb_min = image_empty_clone(b)
+    cv.Min(rg_min,b,rgb_min)
+
+    rgb_sub = image_empty_clone(rgb_max)
+    cv.Sub(rgb_max, rgb_min, rgb_sub)
+
+    binary = image_empty_clone(r)
+    cv.Threshold(rgb_sub,binary,level,255,cv.CV_THRESH_BINARY)
+
+    return binary
+
+def and_planes(planes):
+    assert len(planes) > 0
+    res = planes[0]
+    for plane in planes[1:]:
+        cv.And(plane, res, res)
     return res
 
 @time_took
-def _main(img):
+def skin_mask2(img):
+    r,g,b = get_rgb_planes(img)
+
+    r_plane = get_filtered_plane(r, ((95, 255),), lambda s,f:(s,f))
+    g_plane = get_filtered_plane(g, ((40, 255),), lambda s,f:(s,f))
+    b_plane = get_filtered_plane(b, ((20, 255),), lambda s,f:(s,f))
+
+    minmax_diff = rgb_min_max_diff_plane(r,g,b,16)
+    rg_binary = rg_filter(r, g, 16, b=b)
+
+    res = and_planes((r_plane,g_plane,b_plane,minmax_diff,rg_binary))
+#    cv.Dilate(res, res)
+#    th = image_empty_clone(res)
+#    cv.Smooth(res,res,cv.CV_MEDIAN, 5, 5)
+
+    return res
+
+@time_took
+def filter_skin(img, version=1):
+    if version == 1:
+        mask = skin_mask(img)
+    elif version == 2:
+        mask = skin_mask2(img)
+    res = image_empty_clone(img)
+    cv.Copy(img,res,mask)
+#    cv.And(img, merge_rgb(mask,mask,mask), res)
+    return res
+
+@time_took
+def _main(img, version=1):
 #    img = scale_image(img, 4)
     img = normalize_rgb(img,aggressive=0.005)
-    skin = filter_skin(img)
+    skin = filter_skin(img,version)
     return img, skin
 
-def main():
+def _webcam_test():
     cap = cv.CaptureFromCAM(0)
     while 1:
         img, cam_time = time_took(cv.QueryFrame)(cap, time_took=True)
-        img, skin, time = _main(img, time_took=True)
-        write_info(img, "%.6f cam, %.6f face" % (cam_time, time))
+        img_n = normalize_rgb(img, aggressive=0.003)
+#        img = scale_image(img)
+#        img, skin1, time = _main(img,version=1, time_took=True)
+        skin1 = skin_mask(img_n)
+#        _, skin2, _ = _main(img,version=2, time_took=True)
+#        write_info(img, "%.6f cam, %.6f face" % (cam_time, time))
         cv.ShowImage("cam", img)
-        cv.ShowImage("skin", skin)
+        cv.ShowImage("cam2", img_n)
+        cv.ShowImage("skin1", skin1)
+#        cv.ShowImage("skin2", skin2)
 
         key = cv.WaitKey(10)
         if key == 27:
             break
 
+ft = "latex/Pictures/"
+#ft = "sample/"
+def main():
+    img = cv.LoadImage(ft+"older-people-the-web1.jpg")
+    img = normalize_rgb(img, aggressive=0.003)
+    mask1 = skin_mask(img)
+#    mask2 = skin_mask2(img)
+#    mask = get_mask_with_contour(img)
+#    img, skin = _main(img,version=2)
+#    cv.SaveImage(ft+"dr_house_skin_mask_3.png", mask)
+    show_images({"img":img, "mask":mask1})
+
 if __name__ == "__main__":
     main()
+#    _webcam_test()

@@ -1,7 +1,11 @@
+from utils import directory_files
+
 __author__ = 'soswow'
 import cv
 from cvutils import *
 from skindetect import *
+from contours import merge_images
+from os.path import join
 
 def hsv_test():
     img = cv.LoadImage("sample/img_563.jpg")
@@ -155,6 +159,8 @@ def test1():
         show_images({"img":img,"eq":eq_img,"norm":norm_img,
                      "img_skin":img_skin,"eq_skin":eq_skin,"norm_skin":norm_skin})
 
+
+
 def test_normalize_plane():
     img = cv.LoadImage("sample/lena.bmp")
     _, g, _ = get_rgb_planes(img)
@@ -165,8 +171,23 @@ def test_normalize_plane():
 
     show_images({"g":g, "g_hist_img":g_hist_img, "ng":ng,"ng_hist_img":ng_hist_img})
 
+def test2():
+    path = "/Users/soswow/Documents/Face Detection/gray_test"
+    for file_path, name in directory_files(path):
+        if name.endswith(".jpg"):
+            img = cv.LoadImage(file_path, iscolor=False)
+            N = sizeOf(img)[0] * sizeOf(img)[1]
+            I_bar = cv.Sum(img)[0]/N
+            tmp = image_empty_clone(img)
+            cv.SubS(img, I_bar, tmp)
+            tmp2 = image_empty_clone(img)
+            cv.AddS(tmp, 128, tmp2)
+            merged = merge_images(img, tmp2, vertical=True)
+            cv.SaveImage(join(path, "_%s" % name),merged)
+
+
 if __name__ == "__main__":
-    test1()
+    test2()
 #    test_normalize_plane()
 #    gui()
 #    webcam_normalize()

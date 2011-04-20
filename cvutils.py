@@ -64,7 +64,7 @@ def normalize_plane(plane, aggressive=0):
         _, max_value, _, max_color = cv.GetMinMaxHistValue(hist)
         thr_value = max_value * aggressive
         down_threshold, up_threshold = None, None
-        for k in range(255):
+        for k in range(256):
             down_val = cv.QueryHistValue_1D(hist, k)
             up_val = cv.QueryHistValue_1D(hist, 254-k)
             if down_threshold is None and down_val >= thr_value:
@@ -274,7 +274,7 @@ def sizeOf(obj):
 
 default_font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN, 1, 1)
 def write_info(img, text, font=default_font, color=cv.RGB(255,255,255)):
-    cv.PutText(img, text, (0,15), font, color)
+    cv.PutText(img, text, (5,45), font, color)
 
 def memory():
     return cv.CreateMemStorage()
@@ -294,3 +294,28 @@ def prepare_bw(img, take_v_plane=True):
         cv.CvtColor(img, new_img, cv.CV_BGR2GRAY)
         img = new_img
     return normalize_plane(img)
+
+def get_flatten_image(img):
+    arr = np.asarray(cv.GetMat(img))
+    return arr.flatten()
+
+def with_webcam(func):
+    cap = cv.CaptureFromCAM(0)
+    while True:
+        img = cv.QueryFrame(cap)
+        cv.ShowImage("window", func(img))
+        key = cv.WaitKey(10)
+        if key == 27:
+            break
+
+def main():
+    f = "latex/Pictures/"
+    img = cv.LoadImage(f+"sheldon1_gray.jpg",iscolor=False)
+    norm = normalize_plane(img, aggressive=0.07)
+#    show_images({"before":img, "after":norm})
+    cv.SaveImage(f+"sheldon1_gray_norm_007.png", norm)
+
+
+
+if __name__ == "__main__":
+    main()
