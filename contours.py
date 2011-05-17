@@ -22,7 +22,7 @@ def get_mask_with_contour(img, ret_img=False, ret_cont=False, with_init_mask=Fal
     cv.DrawContours(c_img, seqs, 255, 255, 10, -1)
 
     er_img = image_empty_clone(c_img)
-    cv.Erode(c_img, er_img,iterations=2)
+    cv.Erode(c_img, er_img, iterations=2)
 
     seqs = cv.FindContours(cv.CloneImage(er_img), memory(), cv.CV_RETR_EXTERNAL)
     if not seqs:
