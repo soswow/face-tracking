@@ -135,6 +135,21 @@ def _webcam_test():
         if key == 27:
             break
 
+def _find_centroid(points):
+    xs = ys = 0
+    for x,y in points:
+        xs+=x
+        ys+=y
+    return (xs/len(points), ys/len(points))
+
+
+def contour_centroids(seqs):
+    centroids = []
+    for seq in seq_generator(seqs):
+        box = cv.BoundingRect(seq)
+        if box[2] * box[3] > 4:
+            centroids.append(_find_centroid(seq))
+    return centroids
 
 
 def merge_images(img1, img2, vertical=None):
