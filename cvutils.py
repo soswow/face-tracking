@@ -56,7 +56,7 @@ def scale_image(img_orig, scale_factor=2):
     cv.Resize(img_orig, img)
     return img
 
-def normalize_plane(plane, aggressive=0):
+def normalize_plane(plane, aggressive=0, in_place=False):
     if aggressive:
 #        smooth = image_empty_clone(plane)
 #        cv.Smooth(plane, smooth, cv.CV_GAUSSIAN, 13, 13)
@@ -84,7 +84,12 @@ def normalize_plane(plane, aggressive=0):
             add_plane = image_empty_clone(plane)
             cv.AddS(sub_plane or plane, down_threshold+up_threshold, add_plane)
         plane = add_plane or plane
-    norm_plane = image_empty_clone(plane)
+
+    if in_place:
+        norm_plane = plane
+    else:
+        norm_plane = image_empty_clone(plane)
+
     cv.Normalize(plane, norm_plane, 0, 255, cv.CV_MINMAX)
     return norm_plane
 
@@ -280,7 +285,8 @@ def memory():
     return cv.CreateMemStorage()
 
 small_font = cv.InitFont(cv.CV_FONT_HERSHEY_PLAIN,1,1)
-def draw_boxes(boxes, img, color=cv.RGB(50,255,50), thickness=2,with_text=True):
+def draw_boxes(boxes, img, color=(50,255,50), thickness=2,with_text=True):
+    color = cv.RGB(*color)
     for x,y,w,h in boxes:
         cv.Rectangle(img, (x,y), (x+w, y+h), color, thickness=thickness)
         if with_text:
