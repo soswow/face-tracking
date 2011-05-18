@@ -11,15 +11,10 @@ def get_center(box):
 def euclid_distance(p1, p2):
     return sqrt(sum([(p1[i]-p2[i])**2 for i in range(len(p1))]))
 
-def paths_1():
-    for k in range(1,21):
-        yield "/Users/soswow/Documents/Face Detection/att_faces/pgm/s%d/" % k
 
-def paths_2():
-    yield "/Users/soswow/Documents/Face Detection/lfwcrop_color"
 
 class Face(object):
-    def __init__(self, path):
+    def __init__(self, path, with_face_detection=True):
         self.left_eye = None
         self.right_eye = None
         self.eyes_centers_points = []
@@ -34,7 +29,10 @@ class Face(object):
         img = normalize_plane(img, aggressive=0.05)
         self.img = img
         self.orig_img = cv.CloneImage(img)
-        self.find_face()
+        if with_face_detection:
+            self.find_face()
+        else:
+            self.orig_img = cv.CloneImage(img)
         self.init_facial_features()
 
     def find_face(self):
@@ -172,7 +170,7 @@ class Face(object):
         l = self.eyes_centers_points[0][0] - p_left
         r = self.eyes_centers_points[1][0] + p_right
 
-        rect = [l, t, r-l, b-t]
+        rect = [0 if l < 0 else l, 0 if t < 0 else t, r-l, b-t]
 
 #        diff = rect[3]-rect[2]
 #        if diff > 0:
@@ -203,15 +201,24 @@ class Face(object):
 
         return tmp
 
+def paths_1():
+    for k in range(1,21):
+        pathhh = "/Users/soswow/Documents/Face Detection/att_faces/pgm/s%d/" % k
+        for res in directory_files(pathhh):
+            yield res
+
+def paths_2():
+    for res in directory_files("/Users/soswow/Documents/Face Detection/lfwcrop_color"):
+            yield res
+
 def paths_3():
     for tmp in yield_files_in_path("/Users/soswow/Documents/Face Detection/lfw"):
         yield tmp
 
 def find_in_db():
     for path, filename in paths_3():
-#        for path, filename in directory_files(path):
         try:
-            face = Face(path)
+            face = Face(path, with_face_detection=True)
             show_image(face.draw_face())
             face.normalize_face()
             show_image(face.crop_face())
