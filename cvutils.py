@@ -286,13 +286,19 @@ def draw_boxes(boxes, img, color=cv.RGB(50,255,50), thickness=2,with_text=True):
         if with_text:
             cv.PutText(img, "%d|%d" % (x,y), (x+6,y+13), small_font, cv.RGB(255,255,255))
 
+
+def black_and_white(img):
+    new_img = cv.CreateImage(sizeOf(img), 8, 1)
+    cv.CvtColor(img, new_img, cv.CV_BGR2GRAY)
+    img = new_img
+    return img
+
+
 def prepare_bw(img, take_v_plane=True):
     if take_v_plane:
         _,_,img = get_hsv_planes(img)
     else:
-        new_img = cv.CreateImage(sizeOf(img), 8 , 1)
-        cv.CvtColor(img, new_img, cv.CV_BGR2GRAY)
-        img = new_img
+        img = black_and_white(img)
     return normalize_plane(img)
 
 def get_flatten_image(img):

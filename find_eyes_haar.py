@@ -19,6 +19,8 @@ class Face(object):
         self.mouth = None
 
         img = cv.LoadImage(path, iscolor=False)
+        if img.channels > 1:
+            img = black_and_white(img)
         img = normalize_plane(img, aggressive=0.05)
         self.img = img
         self.init_facial_features()
@@ -60,7 +62,7 @@ class Face(object):
                    min = dist
                    min_j[ci] = j
         for i, j in enumerate(min_j):
-            self.eyes_centers_points[i] = [self.eyes_centers_points[i][j]]
+            self.eyes_centers_points[i] = self.eyes_centers_points[i][j]
 
     def eyes_centers(self):
         left = self._eye_center(self.left_eye)
@@ -76,14 +78,10 @@ class Face(object):
         img = merge_rgb(self.img, self.img, self.img)
         draw_boxes((self.left_eye, self.right_eye), img, color=(0,0,255), thickness=1, with_text=False)
         draw_boxes((self.mouth,), img, color=(255,0,0), thickness=2, with_text=False)
-        for centers in self.eyes_centers_points:
-            for center in centers:
-                cv.Circle(img, center, 3, (125,255,0),thickness=-1)
-#        for eye, dark in ((self.left_eye, self.eyes_centers[0]), (self.right_eye, self.eyes_centers[1])):
-#            cv.SetImageROI(img, eye)
-#            draw_boxes((dark, ),img,(0,255,0),thickness=1, with_text=False)
-##            cv.Set(img, (0,255,0), dark)
-#            cv.ResetImageROI(img)
+        for center in self.eyes_centers_points:
+            cv.Circle(img, center, 3, (125,255,0),thickness=-1)
+        triangle = self.eyes_centers_points + [get_center(self.mouth)]
+        cv.PolyLine(img, [triangle], True, (0,255,255))
         return img
 
     def init_facial_features(self):
@@ -95,13 +93,43 @@ class Face(object):
         self.choose_mouth(mouths)
         self.eyes_centers()
 
-def find_in_db():
+    def rotate_face(self):
+        l, r = map(list, self.eyes_centers_points)
+        avg_eyes_y = (l[1] + r[1]) / 2
+        l[1] = r[1] = avg_eyes_y
+        mouth_center = get_center(self.mouth)
+        mouth = (l[0] + ((r[0] - l[0])/2), mouth_center[1])
+        from_triang = tuple(self.eyes_centers_points + [mouth_center])
+        to_triang = tuple(map(tuple, [l, r, mouth]))
+
+        img = merge_rgb(self.img, self.img, self.img)
+        cv.PolyLine(img, [from_triang], True, (0,255,255))
+        cv.PolyLine(img, [to_triang], True, (0,255,0))
+        show_image(img)
+
+        mapp = cv.CreateMat(2, 3, cv.CV_32F)
+        cv.GetAffineTransform(from_triang, to_triang, mapp)
+        dst = image_empty_clone(self.img)
+        cv.WarpAffine(self.img, dst, mapp, cv.CV_WARP_FILL_OUTLIERS, 0)
+        show_image(dst)
+
+    def crop_face(self):
+        pass
+
+def paths_1():
     for k in range(1,21):
-        path = "/Users/soswow/Documents/Face Detection/att_faces/pgm/s%d/" % k
+        yield "/Users/soswow/Documents/Face Detection/att_faces/pgm/s%d/" % k
+
+def paths_2():
+    yield "/Users/soswow/Documents/Face Detection/lfwcrop_color"
+
+def find_in_db():
+    for path in paths_1():
         for path, filename in directory_files(path):
             try:
                 face = Face(path)
                 show_image(face.draw_face())
+                face.rotate_face()
             except Exception, e:
                 pass
 
