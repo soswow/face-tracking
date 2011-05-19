@@ -42,31 +42,48 @@ def get_faces(set_n):
     path = root_folder + "sets/positive/%d" % set_n
     return get_flatten_images_from(path,1)
 
-def lena_test(net,net2):
-#    img = scale_image(cv.LoadImage("sample/lena.bmp"))
-    img = scale_image(cv.LoadImage("sample/Group-Oct06.jpg"))
+def lena_test(net,net2,size=(32,32)):
+    img = scale_image(cv.LoadImage("sample/lena.bmp"))
+#    img = scale_image(cv.LoadImage("sample/Group-Oct06.jpg"))
     found = []
     
     buf_nf_sum= buf_f_sum=true_neg_sum=0
-    k=0
-    for i, (sample, box) in enumerate(samples_generator(img, 32,32,slide_step=4, resize_step=1.5,bw_from_v_plane=False)):
+    face_avg = not_face_avg = 0
+    kf=knf=0
+    t=k=0
+    for i, (sample, box) in enumerate(samples_generator(img, size[0],size[1],slide_step=4, resize_step=1.1,bw_from_v_plane=False)):
         nf, f = net.activate(get_flatten_image(sample))
         nf2, f2 = net2.activate(get_flatten_image(laplace(sample)))
         buf_nf, buf_f = tuple(net['out'].inputbuffer[0])
         buf_nf2, buf_f2 = tuple(net2['out'].inputbuffer[0])
-        if f > nf and f2 > nf2 and buf_f > 250000 and buf_f2 > 50000:
-            print "%d - %d %d" % (i, buf_f, buf_f2)
+
+#        if f > nf:
+#            face_avg += buf_f
+#            kf+=1
+#        if nf > f:
+#            not_face_avg += buf_nf
+#            knf+=1
+#        if f > nf and f2 > nf2:
+#            t+=1
+        if f > nf and f2 > nf2 and buf_f2 > 100000 and buf_f > 100000:# and buf_f > 250000 and buf_f2 > 50000:
+#            print "%d - %d %d" % (i, buf_f, buf_f2)
 #            buf_nf, buf_f = tuple(net['out'].inputbuffer[0])
-            buf_f_sum+=buf_f2
-            buf_nf_sum+=buf_nf2
+            print buf_f, buf_f2
+            buf_f_sum+=buf_f
+            buf_nf_sum+=buf_nf
             found.append(box)
+            t+=1
         else:
 #            buf_nf, _ = tuple(net['out'].inputbuffer[0])
             true_neg_sum+=buf_nf2
             k+=1
 
-    draw_boxes(found, img, color=cv.RGB(255,255,255), thickness=1, with_text=False)
-    print "Avr nf %.3f, f %.3f, true negative %.3f" % (buf_nf_sum/len(found), buf_f_sum/len(found), true_neg_sum/k)
+#    print "Avr nf %.3f (%d), f %.3f (%d) - if both = %d" % (face_avg/kf if kf else 0, kf,
+#                                                       not_face_avg/knf if knf else 0, knf, t)
+    draw_boxes(found, img, color=(255,255,255), thickness=1, with_text=False)
+    print "Avr nf %.3f, f %.3f, true negative %.3f (total found %d)" % (buf_nf_sum/len(found) if found else 0,
+                                                       buf_f_sum/len(found) if found else 0,
+                                                       true_neg_sum/k if k else 0, t)
     show_image(img)
 
 def build_exp_ann(indim, outdim):
@@ -117,16 +134,16 @@ def build_ann(indim, outdim):
     ann = FeedForwardNetwork()
 
     ann.addInputModule(LinearLayer(indim, name='in'))
-    ann.addModule(SigmoidLayer(5, name='hidden'))
+#    ann.addModule(SigmoidLayer(5, name='hidden'))
 #    ann.addModule(Normal(2,name='hidden'))
     ann.addOutputModule(SoftmaxLayer(outdim,name='out'))
     ann.addModule(BiasUnit(name='bias'))
 
-    ann.addConnection(FullConnection(ann['in'], ann['hidden']))
-    ann.addConnection(FullConnection(ann['hidden'], ann['out']))
-#    ann.addConnection(FullConnection(ann['in'], ann['out']))
+#    ann.addConnection(FullConnection(ann['in'], ann['hidden']))
+#    ann.addConnection(FullConnection(ann['hidden'], ann['out']))
+    ann.addConnection(FullConnection(ann['in'], ann['out']))
     ann.addConnection(FullConnection(ann['bias'], ann['out']))
-    ann.addConnection(FullConnection(ann['bias'], ann['hidden']))
+#    ann.addConnection(FullConnection(ann['bias'], ann['hidden']))
 
     ann.sortModules()
 
@@ -170,7 +187,7 @@ def load_ann(name="default-ann"):
     f.close()
     return ann
 
-def extract_falses(ann1, ann2, check, testpath=None, falses_dir=None, do_copy=True,threshold=None):
+def extract_falses(ann1, ann2, check, testpath=None, falses_dir=None, do_copy=True, threshold=None):
     print "Testing ANN with all negatives or positives"
 #    testpath = root_folder + "lenas"
 
@@ -270,8 +287,8 @@ def extract_falses(ann1, ann2, check, testpath=None, falses_dir=None, do_copy=Tr
 #    draw_hist(avg_p_list)
 #    draw_hist(avg_f_list)
 
-def train_and_save_ann(ann=None, set_n=1, non_face_prop=2, faces_num=1000):
-    alldata = ClassificationDataSet(32 * 32, 1, nb_classes=2, class_labels=("Non-Face", "Face"))
+def train_and_save_ann(ann=None, set_n=1, non_face_prop=2, faces_num=1000, size=(32,32)):
+    alldata = ClassificationDataSet(size[0] * size[1], 1, nb_classes=2, class_labels=("Non-Face", "Face"))
     print "Loading data"
     nonfaces = get_nonfaces(set_n)
     random.shuffle(nonfaces)
@@ -360,25 +377,33 @@ def test_ann_on_set(ann, set_n=2, threshold=None):
 def main():
     global root_folder
 
-#    ann = build_exp_ann(1024, 2)
-    for i in range(2):
-        train_and_save_ann(set_n=1, non_face_prop=2, faces_num=1500)
-    #    ann_pixel = load_ann('default-ann7.9')
-    #    ann_edge = load_ann()
-        ann = load_ann()
-        test_ann_on_set(ann)
-#    test_all_negatives(ann)
-    print "sobel!"
-    root_folder += "sobel/"
-#    ann = build_exp_ann(1024, 2)
-    for i in range(2):
-        train_and_save_ann(set_n=1, non_face_prop=2, faces_num=1500)
-    #    ann_pixel = load_ann('default-ann7.9')
-    #    ann_edge = load_ann()
-        ann = load_ann()
-        test_ann_on_set(ann)
+#    ann = build_ann(400, 2)
+#    train_and_save_ann(set_n=5, ann=ann, non_face_prop=1, faces_num=800, size=(20,20))
+#    root_folder += "sobel/"
+#    train_and_save_ann(set_n=5, ann=ann, non_face_prop=1, faces_num=890, size=(20,20))
 
-#    lena_test(ann_pixel, ann_edge)
+#    for i in range(2):
+#        train_and_save_ann(set_n=1, non_face_prop=2, faces_num=1500)
+#        ann_pixel = load_ann('default-ann7.9')
+#        ann_edge = load_ann()
+#        ann = load_ann()
+#        test_ann_on_set(ann)
+#    test_all_negatives(ann)
+#
+#    print "sobel!"
+
+#    root_folder += "sobel/"
+##    ann = build_exp_ann(1024, 2)
+#    for i in range(2):
+#        train_and_save_ann(set_n=1, non_face_prop=2, faces_num=1500)
+#    #    ann_pixel = load_ann('default-ann7.9')
+#    #    ann_edge = load_ann()
+#        ann = load_ann()
+#        test_ann_on_set(ann)
+
+    ann_pixel = load_ann('default-ann-20x20')
+    ann_edge = load_ann('default-ann-20x20-sobel')
+    lena_test(ann_pixel, ann_edge,size=(20,20))
 
     
 

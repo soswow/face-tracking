@@ -20,6 +20,8 @@ class Face(object):
         self.eyes_centers_points = []
         self.eyes = []
         self.mouth = None
+        self.imgs = []
+        self.orig_imgs = []
 
         self.eye_threshold = 25
 
@@ -27,23 +29,27 @@ class Face(object):
         if img.channels > 1:
             img = black_and_white(img)
         img = normalize_plane(img, aggressive=0.05)
-        self.img = img
+        self.imgs.append(img)
         self.orig_img = cv.CloneImage(img)
         if with_face_detection:
-            self.find_face()
+            self.find_faces(img)
         else:
-            self.orig_img = cv.CloneImage(img)
+            self.orig_imgs.append(cv.CloneImage(img))
         self.init_facial_features()
 
-    def find_face(self):
-        faces = find_faces(self.img)
-        face = faces[0][0]
-        tmp = cv.CreateImage(face[2:4],8,1)
-        cv.SetImageROI(self.img, face)
-        cv.Copy(self.img, tmp)
-        cv.ResetImageROI(self.img)
-        self.img = tmp
-        self.orig_img = cv.CloneImage(tmp)
+    def find_faces(self, img):
+        faces = find_faces(img)
+        self.imgs = []
+        self.orig_imgs = []
+        for face, _ in faces:
+#            face = faces[0][0]
+            tmp = cv.CreateImage(face[2:4],8,1)
+            cv.SetImageROI(img, face)
+            cv.Copy(img, tmp)
+            cv.ResetImageROI(img)
+
+            self.imgs.append(tmp)
+            self.orig_imgs.append(cv.CloneImage(tmp))
 
     def _eye_center(self, eye):
         cv.SetImageROI(self.img, eye)
@@ -119,9 +125,17 @@ class Face(object):
         return img
 
     def init_facial_features(self):
-        eyes = find_eyes(self.img)
-        mouths = find_mouth(self.img)
-        if len(eyes) != 2 or not mouths:
+        self.img = None
+        for img, origin in zip(self.imgs, self.orig_imgs):
+            eyes = find_eyes(img)
+            mouths = find_mouth(img)
+            if len(eyes) != 2 or not mouths:
+                continue
+            else:
+                self.img = img
+                self.orig_img = origin
+                break
+        if not self.img:
             raise Exception("Not enough features")
         self.insert_eyes(eyes)
         self.choose_mouth(mouths)
@@ -140,7 +154,7 @@ class Face(object):
             size = sizeOf(self.img)
             dst = image_empty_clone(self.img, size=(size[0]*1.1, size[1]*1.1))
             cv.WarpAffine(self.orig_img, dst, rot_mapp, cv.CV_WARP_FILL_OUTLIERS, 0)
-            show_image(dst)
+#            show_image(dst)
             self.img = dst
 
         if screw_mouth:
@@ -154,23 +168,28 @@ class Face(object):
             tmp = merge_rgb(dst, dst, dst)
             cv.PolyLine(tmp, [from_triang], True, (0,255,255))
             cv.PolyLine(tmp, [to_triang], True, (0,255,0))
-            show_image(tmp)
+#            show_image(tmp)
 
             screw_mapp = cv.CreateMat(2, 3, cv.CV_32F)
             cv.GetAffineTransform(from_triang, to_triang, screw_mapp)
             tmp = image_empty_clone(dst)
             cv.WarpAffine(dst, tmp, screw_mapp, cv.CV_WARP_FILL_OUTLIERS, 0)
-            show_image(tmp)
+#            show_image(tmp)
             self.img = tmp
 
-    def crop_face(self):
+    def crop_face(self, draw_grid=True):
         p_top, p_bot, p_left, p_right = 26,0,23,23
         t = min([eye_c[1] for eye_c in self.eyes_centers_points]) - p_top
         b = self.mouth[1] + self.mouth[3] + p_bot
         l = self.eyes_centers_points[0][0] - p_left
         r = self.eyes_centers_points[1][0] + p_right
 
-        rect = [0 if l < 0 else l, 0 if t < 0 else t, r-l, b-t]
+        w,h = sizeOf(self.img)
+        l = 0 if l < 0 else l
+        t = 0 if t < 0 else t
+        rect = [l, t,
+                w-l if r > w else r-l,
+                h-t if b > h else b-t]
 
 #        diff = rect[3]-rect[2]
 #        if diff > 0:
@@ -193,41 +212,66 @@ class Face(object):
         cv.Resize(tmp, resize, cv.CV_INTER_LINEAR)
         tmp = resize
 
-        print sizeOf(tmp)
-
-        cv.Line(tmp,(p_left,0), (p_left, rect[3]), color=255)
-        cv.Line(tmp,(rect[2]-p_right,0), (rect[2]-p_right, rect[3]), color=255)
-        cv.Line(tmp,(0,p_top), (rect[2], p_top), color=255)
+#        print sizeOf(tmp)
+        if draw_grid:
+            cv.Line(tmp,(p_left,0), (p_left, rect[3]), color=255)
+            cv.Line(tmp,(rect[2]-p_right,0), (rect[2]-p_right, rect[3]), color=255)
+            cv.Line(tmp,(0,p_top), (rect[2], p_top), color=255)
 
         return tmp
 
 def paths_1():
-    for k in range(1,21):
+    for k in range(1,41):
         pathhh = "/Users/soswow/Documents/Face Detection/att_faces/pgm/s%d/" % k
         for res in directory_files(pathhh):
             yield res
 
 def paths_2():
     for res in directory_files("/Users/soswow/Documents/Face Detection/lfwcrop_color"):
-            yield res
+        yield res
 
 def paths_3():
     for tmp in yield_files_in_path("/Users/soswow/Documents/Face Detection/lfw"):
         yield tmp
 
-def find_in_db():
-    for path, filename in paths_3():
-        try:
-            face = Face(path, with_face_detection=True)
-            show_image(face.draw_face())
-            face.normalize_face()
-            show_image(face.crop_face())
+def paths_4():
+    for tmp in yield_files_in_path("/Users/soswow/Documents/Face Detection/Georgia Tech face database/cropped_faces"):
+        yield tmp
 
+def paths_5():
+    for tmp in yield_files_in_path("/Users/soswow/Documents/Face Detection/Frontal face dataset"):
+        yield tmp
+
+def find_in_db():
+#    base_url = "/Users/soswow/Documents/Face Detection/test/normalized/raw/wild"
+    base_url = "/Users/soswow/Documents/Face Detection/test/normalized/raw/frontal/"
+    i=0
+    for path, filename in paths_5():
+        try:
+            filename = filename.replace(".pgm",".png")
+            filename = filename.replace(".jpg",".png")
+            filename = "%d - %s" % (i, filename)
+            face = Face(path, with_face_detection=True)
+#            show_image(face.draw_face())
+            face.normalize_face()
+            img = face.crop_face(draw_grid=True)
+            cv.SaveImage(base_url + "big/" + filename, img)
+#            show_image(img)
+            img = face.crop_face(draw_grid=False)
+            img = normalize_plane(img)
+            resize = image_empty_clone(img, size=(20,20))
+            cv.Resize(img, resize, cv.CV_INTER_LINEAR)
+            img = resize
+            cv.SaveImage(base_url + "small/" + filename, img)
+            print filename
+            i+=1
+#            show_image(img)
 #            face.img = res
 #            face.init_facial_features()
 #            show_image(face.draw_face())
         except Exception, e:
-            print e
+            pass
+#            print e
 
 def main():
     find_in_db()

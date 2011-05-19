@@ -15,12 +15,12 @@ def get_mask(w,h):
     cv.FillPoly(img,(poly,), 255)
     return img
 
-def samples_generator(img, w, h, slide_step=1, resize_step=1.2, bw_from_v_plane=True):
+def samples_generator(img, w, h, slide_step=1, resize_step=1.2, bw_from_v_plane=True, withmask=False):
     img = prepare_bw(img,take_v_plane=bw_from_v_plane)
     ow, oh = sizeOf(img)
     if ow < w and oh < h:
         raise Exception("Requested sample is bigger than source")
-#    mask = get_mask(w,h)
+    mask = get_mask(w,h)
     cw, ch = ow*resize_step, oh*resize_step
     boxy = cv.CreateImage((w,h),8,1)
     while cw > w and ch > h:
@@ -41,10 +41,11 @@ def samples_generator(img, w, h, slide_step=1, resize_step=1.2, bw_from_v_plane=
                 cv.SetImageROI(img, (cx,cy,w,h))
                 cv.Zero(boxy)
                 cv.Copy(img, boxy)
-#                To heavy to have mask
-#                dst = cv.CreateImage((w,h), 8, 1)
-#                cv.Zero(dst)
-#                cv.Copy(img, dst, mask)
+                if withmask:
+#                    To heavy to have mask
+                    dst = cv.CreateImage((w,h), 8, 1)
+                    cv.Zero(dst)
+                    cv.Copy(img, dst, mask)
                 yield boxy, (cx*k,cy*k,w*k,h*k)
         cv.ResetImageROI(img)
 

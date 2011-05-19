@@ -312,7 +312,7 @@ def get_flatten_image(img):
     return arr.flatten()
 
 def with_webcam(func):
-    cap = cv.CaptureFromCAM(0)
+    cap = cv.CaptureFromCAM(1)
     while True:
         img = cv.QueryFrame(cap)
         cv.ShowImage("window", func(img))
@@ -321,11 +321,12 @@ def with_webcam(func):
             break
 
 def main():
-    f = "latex/Pictures/"
-    img = cv.LoadImage(f+"sheldon1_gray.jpg",iscolor=False)
-    norm = normalize_plane(img, aggressive=0.07)
-#    show_images({"before":img, "after":norm})
-    cv.SaveImage(f+"sheldon1_gray_norm_007.png", norm)
+#    f = "latex/Pictures/"
+#    img = cv.LoadImage(f+"sheldon1_gray.jpg",iscolor=False)
+#    norm = normalize_plane(img, aggressive=0.07)
+##    show_images({"before":img, "after":norm})
+#    cv.SaveImage(f+"sheldon1_gray_norm_007.png", norm)
+    with_webcam(lambda a:a)
 
 
 

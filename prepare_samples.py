@@ -1,3 +1,4 @@
+from genericpath import exists
 import math
 import os
 import cv
@@ -132,8 +133,52 @@ def make_sets():
     negatives_path=root_folder+"negative"
     positive_path=root_folder+"positive"
     sets_path = root_folder+"sets"
-    make_sets_from_path(positive_path,pjoin(sets_path,"positive"))
-    make_sets_from_path(negatives_path,pjoin(sets_path,"negative"))
+    make_sets_from_path(positive_path, pjoin(sets_path,"positive"))
+    make_sets_from_path(negatives_path, pjoin(sets_path,"negative"))
+
+def make_normalized_set():
+    subs = ["att","georgy","wild"]
+    normalized_path = root_folder+"normalized/chosen/"
+    set_path = root_folder+"sets/positive/5"
+    os.rmdir(set_path)
+    os.makedirs(set_path)
+    mask = get_mask(20,20)
+    for sub in subs:
+        source_path = normalized_path+sub+"/med"
+        for filepath, filename in yield_files_in_path(source_path):
+            img = cv.LoadImage(filepath, iscolor=False)
+            masked = with_mask(img, mask)
+            cv.SaveImage(pjoin(set_path, filename), masked)
+#            shutil.copy(filepath, pjoin(set_path, filename))
+
+def clone_negatives_set():
+    source_path = root_folder + "/sets/negative/4/"
+    dest_path =   root_folder + "/sets/negative/5/"
+    mask = get_mask(20,20)
+    for path, filename in yield_files_in_path(source_path):
+        try:
+            img = cv.LoadImage(path, iscolor=False)
+            resize = image_empty_clone(img, size=(20,20))
+            cv.Resize(img, resize, cv.CV_INTER_LINEAR)
+            masked = with_mask(resize, mask)
+            cv.SaveImage(dest_path+filename, masked)
+        except IOError:
+            pass
+
+def clone_set_with_(func, set_num):
+    for posneg in ["negative", "positive"]:
+        source_path = "%s%s/%s/%d" % (root_folder, "sets",posneg , set_num)
+        dest_path = "%s%s/%s/%d" % (root_folder, "sobel/sets", posneg, set_num)
+        if not exists(dest_path):
+            os.makedirs(dest_path)
+        for filepath, filename in yield_files_in_path(source_path):
+            try:
+                img = cv.LoadImage(filepath, iscolor=False)
+                img = func(img)
+                cv.SaveImage(dest_path+"/"+filename, img)
+            except IOError:
+                pass
+
 
 def clone_with_(func, folder="with_mask"):
     from_root = root_folder+""
@@ -158,13 +203,17 @@ def clone_with_(func, folder="with_mask"):
 
                 cv.SaveImage(new_path, func(img))
 
+def with_mask(img, mask):
+    masked = cv.CreateImage(sizeOf(img),8,1)
+    cv.Zero(masked)
+    cv.Copy(img, masked, mask=mask)
+    return masked
+
 def clone_with_mask():
     mask = get_mask(32,32)
-    def with_mask(img):
-        masked = cv.CreateImage(sizeOf(img),8,1)
-        cv.Zero(masked)
-        cv.Copy(img, masked, mask=mask)
-    clone_with_(with_mask, "with_mask")
+    def _with_mask(img):
+        with_mask(img, mask)
+    clone_with_(_with_mask, "with_mask")
 
 def clone_with_edges():
     clone_with_(get_canny_img, "edge_view")
@@ -174,10 +223,16 @@ def clone_with_laplace():
 
 def main():
     global root_folder
-    root_folder += "sobel/"
+#    root_folder += "sobel/"
+
 #    clone_with_laplace()
 #    clone_with_mask()
-    make_sets()
+#    make_sets()
+
+#    make_normalized_set()
+#    clone_negatives_set()
+    clone_set_with_(laplace, 5)
+
 #    clone_with_edges()
 #    prepare_negatives()
 #    wild_face()

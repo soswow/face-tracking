@@ -5,6 +5,8 @@ from os.path import join
 def yield_files_in_path(path):
     for top, dirs, files in os.walk(path, topdown=False):
 #        print "Yielding %d files ... " % len(files)
+        dirs.sort()
+        files.sort()
         for name in files:
             yield  join(top, name), name
 #        for dir in dirs:
@@ -15,6 +17,8 @@ def yield_files_in_path(path):
 def directory_files(path):
     output = []
     for top, dirs, files in os.walk(path, topdown=False):
+        dirs.sort()
+        files.sort()
 #        print "Yielding %d files ... " % len(files)
         for name in files:
             output.append((join(top, name), name))
